@@ -51,8 +51,22 @@ int main(int argc, char* argv[]) {
                 "Content-Type: text/html\r\n"
                 "\r\n";
         response_data += INDEX_HTML;
-        zmq::message_t response(
-                const_cast<char*>(response_data.c_str()), response_data.size(), nullptr, nullptr);
+        zmq::message_t response(response_data.c_str(), response_data.size());
+        return response;
+    });
+
+    http_server.addRequestHandler("/svg", [](zmq::message_t) {
+        std::string response_data =
+                "HTTP/1.0 200 OK\r\n"
+                "Content-Type: image/svg+xml\r\n"
+                "\r\n";
+        // response_data += R"#(<!DOCTYPE html><html><body><svg width="100" height="100">)#";
+        response_data +=
+                R"#(<svg xmlns='http://www.w3.org/2000/svg' style="background-color:black">)#";
+        response_data += R"#(<circle cx="50" cy="50" r="40" fill="yellow" />)#";
+        response_data += R"#(</svg>)#";
+        // response_data += R"#(</svg></body></html>)#";
+        zmq::message_t response(response_data.c_str(), response_data.size());
         return response;
     });
 
