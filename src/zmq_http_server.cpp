@@ -46,7 +46,7 @@ void ZmqHttpServer::sendResponse(zmq::message_t request_handle, zmq::message_t r
 
 void ZmqHttpServer::sendResponse404(zmq::message_t request_handle) {
     static constexpr char HTTP_404[] =
-            "HTTP/1.0 404 Not Found\r\n"
+            "HTTP/1.1 404 Not Found\r\n"
             "Content-Type: text/plain\r\n"
             "\r\n"
             "404 Page Not Found";

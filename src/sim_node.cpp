@@ -7,6 +7,10 @@ static constexpr char INDEX_HTML[] =
 #include <index.html>
         ;
 
+static constexpr char DISPLAY_SVG[] =
+#include <display.svg>
+        ;
+
 static constexpr char HELP_STRING[] =
         "Usage: sim_node [-i peer0,peer1,...] [-p http_port] [-b mesh_port] public_address";
 
@@ -47,7 +51,7 @@ int main(int argc, char* argv[]) {
 
     http_server.addRequestHandler("/", [](zmq::message_t) {
         std::string response_data =
-                "HTTP/1.0 200 OK\r\n"
+                "HTTP/1.1 200 OK\r\n"
                 "Content-Type: text/html\r\n"
                 "\r\n";
         response_data += INDEX_HTML;
@@ -55,17 +59,20 @@ int main(int argc, char* argv[]) {
         return response;
     });
 
-    http_server.addRequestHandler("/svg", [](zmq::message_t) {
+    http_server.addRequestHandler("/display", [](zmq::message_t) {
         std::string response_data =
-                "HTTP/1.0 200 OK\r\n"
+                "HTTP/1.1 200 OK\r\n"
                 "Content-Type: image/svg+xml\r\n"
                 "\r\n";
-        // response_data += R"#(<!DOCTYPE html><html><body><svg width="100" height="100">)#";
-        response_data +=
-                R"#(<svg xmlns='http://www.w3.org/2000/svg' style="background-color:black">)#";
-        response_data += R"#(<circle cx="50" cy="50" r="40" fill="yellow" />)#";
-        response_data += R"#(</svg>)#";
-        // response_data += R"#(</svg></body></html>)#";
+        response_data += DISPLAY_SVG;
+
+        response_data += R"#(<circle cx="50" cy="50" r="40" )#";
+        static int i = 0;
+        response_data += (++i & 1) ? 
+        R"#(fill="yellow" />)#" :
+        R"#(fill="green" />)#" ;
+
+        response_data += "</svg>";
         zmq::message_t response(response_data.c_str(), response_data.size());
         return response;
     });
