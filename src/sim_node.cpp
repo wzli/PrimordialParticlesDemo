@@ -51,7 +51,8 @@ int main(int argc, char* argv[]) {
                 "Content-Type: text/html\r\n"
                 "\r\n";
         response_data += INDEX_HTML;
-        zmq::message_t response(response_data.c_str(), response_data.size());
+        zmq::message_t response(
+                const_cast<char*>(response_data.c_str()), response_data.size(), nullptr, nullptr);
         return response;
     });
 
