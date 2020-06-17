@@ -2,8 +2,14 @@
 #include <particles.hpp>
 #include <zmq_http_server.hpp>
 
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+
 #include <unistd.h>
 #include <iostream>
+
+namespace bio = boost::iostreams;
 
 static constexpr char INDEX_HTML[] =
 #include <index.html>
@@ -63,14 +69,23 @@ int main(int argc, char* argv[]) {
     });
 
     http_server.addRequestHandler("/display", [&](zmq::message_t) {
-        std::stringstream response_stream;
-        response_stream << "HTTP/1.1 200 OK\r\n"
-                           "Content-Type: image/svg+xml\r\n"
-                           "\r\n";
+        std::string response_string =
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: image/svg+xml\r\n"
+                "Content-Encoding: gzip\r\n"
+                "\r\n";
         particles.update();
-        display.drawParticlesSvg(response_stream, particles);
-        auto response_data = response_stream.str();
-        zmq::message_t response(response_data.c_str(), response_data.size());
+        std::stringstream svg_stream, out_stream;
+        display.drawParticlesSvg(svg_stream, particles);
+
+        bio::filtering_streambuf<bio::input> out;
+        out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_compression)));
+        out.push(svg_stream);
+        bio::copy(out, out_stream);
+
+        response_string += out_stream.str();
+
+        zmq::message_t response(response_string.c_str(), response_string.size());
         return response;
     });
 
