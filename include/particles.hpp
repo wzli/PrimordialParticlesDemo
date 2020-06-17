@@ -34,6 +34,7 @@ public:
     Particles(Config config);
     void update();
 
+    const Config& getConfig() const { return _config; }
     const RTree& getRTree() const { return _rtree; }
     const std::unordered_map<uint32_t, Particle>& getParticles() const { return _particles; }
 

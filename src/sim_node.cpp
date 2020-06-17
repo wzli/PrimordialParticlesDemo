@@ -1,15 +1,12 @@
-#include <zmq_http_server.hpp>
+#include <display.hpp>
 #include <particles.hpp>
+#include <zmq_http_server.hpp>
+
 #include <unistd.h>
 #include <iostream>
-#include <sstream>
 
 static constexpr char INDEX_HTML[] =
 #include <index.html>
-        ;
-
-static constexpr char DISPLAY_SVG[] =
-#include <display.svg>
         ;
 
 static constexpr char HELP_STRING[] =
@@ -50,17 +47,8 @@ int main(int argc, char* argv[]) {
 
     Particles::Config sim_config;
     Particles particles(sim_config);
-    particles.update();
 
-    std::stringstream svg_stream;
-    svg_stream << "<g fill=\"green\">\r\n";
-    for (const auto& particle : particles.getParticles()) {
-        svg_stream << "<circle r=\"10\" cx=\"" << particle.second.position.x() << "\" cy=\""
-                   << particle.second.position.y() << "\"/>\r\n";
-    }
-    svg_stream << "</g>\r\n";
-    printf("size %d\n", particles.getParticles().size());
-    // std::cout << svg_stream.str();
+    Display display;
 
     ZmqHttpServer http_server(http_port);
 
@@ -79,9 +67,8 @@ int main(int argc, char* argv[]) {
         response_stream << "HTTP/1.1 200 OK\r\n"
                            "Content-Type: image/svg+xml\r\n"
                            "\r\n";
-        response_stream << DISPLAY_SVG;
-        response_stream << svg_stream.str();
-        response_stream << "</svg>\r\n";
+        particles.update();
+        display.drawParticlesSvg(response_stream, particles);
         auto response_data = response_stream.str();
         zmq::message_t response(response_data.c_str(), response_data.size());
         return response;
