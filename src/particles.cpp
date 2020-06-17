@@ -47,11 +47,11 @@ void Particles::update() {
 void Particles::respawnParticles() {
     while (_particles.size() < M_PI * _config.simulation_radius * _config.simulation_radius *
                                        _config.simulation_density) {
-        auto id = _random_generator();
+        uint32_t id = _random_generator();
         while (_particles.find(id) != _particles.end()) {
             id = _random_generator();
         }
-        Particle new_particle{id, 0, 0,
+        Particle new_particle{id, 0, 0, 0,
                 {_normal_distribution(_random_generator), _normal_distribution(_random_generator)},
                 {_config.travel_speed, 0}};
         bg::add_point(new_particle.position, _config.simulation_origin);
@@ -78,11 +78,15 @@ void Particles::updateParticleVelocity(Particle& particle) const {
 void Particles::updateParticleNeighborCount(Particle& particle) const {
     particle.left_neighbors = 0;
     particle.right_neighbors = 0;
+    particle.close_neighbors = 0;
     for (auto query_itr = _rtree.qbegin(bg::index::nearest(particle.position, _rtree.size()));
             query_itr != _rtree.qend(); ++query_itr) {
         auto distance_squared = bg::comparable_distance(particle.position, query_itr->first);
         if (distance_squared > (_config.neighbor_radius * _config.neighbor_radius)) {
             break;
+        }
+        if (distance_squared < (_config.close_radius * _config.close_radius)) {
+            ++particle.close_neighbors;
         }
         Point neighbor_direction = query_itr->first;
         bg::subtract_point(neighbor_direction, particle.position);

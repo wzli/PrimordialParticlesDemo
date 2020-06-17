@@ -14,9 +14,10 @@ public:
     using RTree = boost::geometry::index::rtree<PointValue, boost::geometry::index::rstar<16>>;
 
     struct Particle {
-        size_t id;
-        size_t left_neighbors;
-        size_t right_neighbors;
+        uint32_t id;
+        uint32_t left_neighbors;
+        uint32_t right_neighbors;
+        uint32_t close_neighbors;
         Point position;
         Point velocity;
     };
@@ -27,6 +28,7 @@ public:
         float simulation_density = 1;
         float travel_speed = 0.67f;
         float neighbor_radius = 5.0f;
+        float close_radius = 1.3f;
         float alpha = M_PI;
         float beta = 17 * M_PI / 180;
     };

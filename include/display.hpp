@@ -8,6 +8,21 @@ struct Display {
     std::string svg_bg_color = "black";
     float particle_radius = 0.1f;
 
+    const char* assignParticleColor(const Particles::Particle& particle) {
+        size_t total_neighbors = particle.left_neighbors + particle.right_neighbors;
+        if (total_neighbors > 35) {
+            return "yellow";
+        } else if (total_neighbors > 16) {
+            return "blue";
+        } else if (particle.close_neighbors > 15) {
+            return "magenta";
+        } else if (total_neighbors > 13) {
+            return "brown";
+        } else {
+            return "green";
+        }
+    }
+
     void drawParticlesSvg(std::stringstream& ss, const Particles& particles) {
         auto r = particles.getConfig().simulation_radius;
         auto origin = particles.getConfig().simulation_origin;
@@ -23,8 +38,7 @@ struct Display {
             ss << "r=\"" << particle_radius << "\" ";
             ss << "cx=\"" << particle.second.position.x() << "\" ";
             ss << "cy=\"" << particle.second.position.y() << "\" ";
-            ss << "fill=\"green"
-                  "\" />\r\n";
+            ss << "fill=\"" << assignParticleColor(particle.second) << "\" />\r\n";
         }
         ss << "</g>\r\n";
         ss << "</svg>\r\n";
