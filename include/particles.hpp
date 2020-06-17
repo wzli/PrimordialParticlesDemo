@@ -24,8 +24,8 @@ public:
 
     struct Config {
         Point simulation_origin = {0, 0};
-        float simulation_radius = 30;
-        float simulation_density = 0.08;
+        float simulation_radius = 50;
+        float simulation_density = 0.1;
         float travel_speed = 0.67f;
         float neighbor_radius = 5.0f;
         float close_radius = 1.3f;
@@ -49,7 +49,7 @@ private:
     const Config _config;
     std::random_device _random_device;
     std::mt19937 _random_generator;
-    std::normal_distribution<float> _normal_distribution;
+    std::uniform_real_distribution<float> _uniform_distribution;
     RTree _rtree;
     std::vector<PointValue> _insert_buffer;
     std::unordered_map<uint32_t, Particle> _particles;

@@ -11,7 +11,7 @@ namespace bg = boost::geometry;
 Particles::Particles(Config config)
         : _config(std::move(config))
         , _random_generator(_random_device())
-        , _normal_distribution(0, _config.simulation_radius * 0.5f) {
+        , _uniform_distribution(-_config.simulation_radius, _config.simulation_radius) {
     if (_config.simulation_radius <= 0) {
         throw std::invalid_argument("positive simulation radius required");
     }
@@ -52,7 +52,8 @@ void Particles::respawnParticles() {
             id = _random_generator();
         }
         Particle new_particle{id, 0, 0, 0,
-                {_normal_distribution(_random_generator), _normal_distribution(_random_generator)},
+                {_uniform_distribution(_random_generator),
+                        _uniform_distribution(_random_generator)},
                 {_config.travel_speed, 0}};
         bg::add_point(new_particle.position, _config.simulation_origin);
         _particles[id] = std::move(new_particle);

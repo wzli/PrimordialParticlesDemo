@@ -24,7 +24,7 @@ struct Display {
     }
 
     void drawParticlesSvg(std::stringstream& ss, const Particles& particles) {
-        auto r = particles.getConfig().simulation_radius;
+        auto r = particles.getConfig().simulation_radius * M_SQRT1_2;
         auto origin = particles.getConfig().simulation_origin;
         ss << "<svg xmlns=\"http://www.w3.org/2000/svg\" ";
         ss << "style=\"background-color:" << svg_bg_color << "\" ";
