@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
 
     while (1) {
         try {
-            http_server.poll();
+            http_server.poll(1000);
         } catch (const zmq::error_t& e) {
             puts(e.what());
         }

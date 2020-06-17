@@ -51,12 +51,10 @@ void Particles::respawnParticles() {
         while (_particles.find(id) != _particles.end()) {
             id = _random_generator();
         }
-        Particle new_particle{id, 0, 0, 0,
-                {_uniform_distribution(_random_generator),
-                        _uniform_distribution(_random_generator)},
-                {_config.travel_speed, 0}};
-        bg::add_point(new_particle.position, _config.simulation_origin);
-        _particles[id] = std::move(new_particle);
+        Point position(
+                _uniform_distribution(_random_generator), _uniform_distribution(_random_generator));
+        bg::add_point(position, _config.simulation_origin);
+        _particles[id] = {id, 0, 0, 0, position, {_config.travel_speed, 0}};
     }
 }
 
@@ -70,9 +68,10 @@ void Particles::rebuildRTree() {
 }
 
 void Particles::updateParticleVelocity(Particle& particle) const {
-    float rotation = _config.alpha +
-                     _config.beta * (particle.left_neighbors + particle.right_neighbors) *
-                             bg::math::sign(particle.right_neighbors - particle.left_neighbors);
+    float rotation =
+            _config.alpha +
+            _config.beta * (particle.left_neighbors + particle.right_neighbors) *
+                    bg::math::sign<int>(particle.left_neighbors - particle.right_neighbors);
     bg::strategy::transform::rotate_transformer<bg::radian, float, 2, 2> rotation_matrix(rotation);
     bg::transform(particle.velocity, particle.velocity, rotation_matrix);
 }
