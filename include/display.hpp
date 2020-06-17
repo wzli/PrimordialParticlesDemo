@@ -28,5 +28,5 @@ struct Display {
         }
         ss << "</g>\r\n";
         ss << "</svg>\r\n";
-    };
+    }
 };

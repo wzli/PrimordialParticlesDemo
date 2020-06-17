@@ -31,7 +31,9 @@ void Particles::update() {
         updateParticleVelocity(particle.second);
         // update position
         bg::add_point(particle.second.position, particle.second.velocity);
-        // delete particles outside of simulation radius
+    }
+    // delete particles outside of simulation radius
+    for (auto& particle : _particles) {
         auto distance_squared =
                 bg::comparable_distance(particle.second.position, _config.simulation_origin);
         if (distance_squared > (_config.simulation_radius * _config.simulation_radius)) {
@@ -70,7 +72,7 @@ void Particles::updateParticleVelocity(Particle& particle) const {
     float rotation = bg::math::sign(particle.right_neighbors - particle.left_neighbors) *
                      _config.beta * (particle.left_neighbors + particle.right_neighbors);
     bg::strategy::transform::rotate_transformer<bg::radian, float, 2, 2> rotation_matrix(rotation);
-    rotation_matrix.apply(Point(0, 0), particle.velocity);
+    bg::transform(particle.velocity, particle.velocity, rotation_matrix);
 }
 
 void Particles::updateParticleNeighborCount(Particle& particle) const {
