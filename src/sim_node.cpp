@@ -1,5 +1,4 @@
 #include <zmq_http_server.hpp>
-
 #include <unistd.h>
 #include <iostream>
 
@@ -68,9 +67,10 @@ int main(int argc, char* argv[]) {
 
         response_data += R"#(<circle cx="50" cy="50" r="40" )#";
         static int i = 0;
-        response_data += (++i & 1) ? 
-        R"#(fill="yellow" />)#" :
-        R"#(fill="green" />)#" ;
+        response_data += (++i & 1) ?
+                                   R"#(fill="yellow" />)#"
+                                   :
+                                   R"#(fill="green" />)#";
 
         response_data += "</svg>";
         zmq::message_t response(response_data.c_str(), response_data.size());
