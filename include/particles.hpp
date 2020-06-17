@@ -24,8 +24,8 @@ public:
 
     struct Config {
         Point simulation_origin = {0, 0};
-        float simulation_radius = 10;
-        float simulation_density = 1;
+        float simulation_radius = 30;
+        float simulation_density = 0.08;
         float travel_speed = 0.67f;
         float neighbor_radius = 5.0f;
         float close_radius = 1.3f;

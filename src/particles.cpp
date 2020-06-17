@@ -69,8 +69,9 @@ void Particles::rebuildRTree() {
 }
 
 void Particles::updateParticleVelocity(Particle& particle) const {
-    float rotation = bg::math::sign(particle.right_neighbors - particle.left_neighbors) *
-                     _config.beta * (particle.left_neighbors + particle.right_neighbors);
+    float rotation = _config.alpha +
+                     _config.beta * (particle.left_neighbors + particle.right_neighbors) *
+                             bg::math::sign(particle.right_neighbors - particle.left_neighbors);
     bg::strategy::transform::rotate_transformer<bg::radian, float, 2, 2> rotation_matrix(rotation);
     bg::transform(particle.velocity, particle.velocity, rotation_matrix);
 }
