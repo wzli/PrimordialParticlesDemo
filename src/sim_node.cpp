@@ -1,6 +1,8 @@
 #include <zmq_http_server.hpp>
+#include <particles.hpp>
 #include <unistd.h>
 #include <iostream>
+#include <sstream>
 
 static constexpr char INDEX_HTML[] =
 #include <index.html>
@@ -46,6 +48,20 @@ int main(int argc, char* argv[]) {
     }
     printf("i %s p %s b %s a %s\n", initial_peers, http_port, mesh_port, argv[optind]);
 
+    Particles::Config sim_config;
+    Particles particles(sim_config);
+    particles.update();
+
+    std::stringstream svg_stream;
+    svg_stream << "<g fill=\"green\">\r\n";
+    for (const auto& particle : particles.getParticles()) {
+        svg_stream << "<circle r=\"10\" cx=\"" << particle.second.position.x() << "\" cy=\""
+                   << particle.second.position.y() << "\"/>\r\n";
+    }
+    svg_stream << "</g>\r\n";
+    printf("size %d\n", particles.getParticles().size());
+    // std::cout << svg_stream.str();
+
     ZmqHttpServer http_server(http_port);
 
     http_server.addRequestHandler("/", [](zmq::message_t) {
@@ -58,21 +74,15 @@ int main(int argc, char* argv[]) {
         return response;
     });
 
-    http_server.addRequestHandler("/display", [](zmq::message_t) {
-        std::string response_data =
-                "HTTP/1.1 200 OK\r\n"
-                "Content-Type: image/svg+xml\r\n"
-                "\r\n";
-        response_data += DISPLAY_SVG;
-
-        response_data += R"#(<circle cx="50" cy="50" r="40" )#";
-        static int i = 0;
-        response_data += (++i & 1) ?
-                                   R"#(fill="yellow" />)#"
-                                   :
-                                   R"#(fill="green" />)#";
-
-        response_data += "</svg>";
+    http_server.addRequestHandler("/display", [&](zmq::message_t) {
+        std::stringstream response_stream;
+        response_stream << "HTTP/1.1 200 OK\r\n"
+                           "Content-Type: image/svg+xml\r\n"
+                           "\r\n";
+        response_stream << DISPLAY_SVG;
+        response_stream << svg_stream.str();
+        response_stream << "</svg>\r\n";
+        auto response_data = response_stream.str();
         zmq::message_t response(response_data.c_str(), response_data.size());
         return response;
     });
