@@ -33,11 +33,13 @@ void Particles::update() {
         bg::add_point(particle.second.position, particle.second.velocity);
     }
     // delete particles outside of simulation radius
-    for (auto& particle : _particles) {
+    for (auto particle = _particles.begin(); particle != _particles.end();) {
         auto distance_squared =
-                bg::comparable_distance(particle.second.position, _config.simulation_origin);
+                bg::comparable_distance(particle->second.position, _config.simulation_origin);
         if (distance_squared > (_config.simulation_radius * _config.simulation_radius)) {
-            _particles.erase(particle.first);
+            particle = _particles.erase(particle);
+        } else {
+            ++particle;
         }
     }
     respawnParticles();
