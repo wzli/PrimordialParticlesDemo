@@ -2,19 +2,8 @@ cmake_minimum_required(VERSION 3.0.2)
 
 project(PrimoridalParticlesDemo)
 
-# Boost setup
-set(BOOST_ROOT_DIR ${CMAKE_BINARY_DIR})
-include(ExternalProject)
-ExternalProject_Add(
-    Boost
-    URL https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.gz
-    CONFIGURE_COMMAND ./bootstrap.sh --prefix=${BOOST_ROOT_DIR} --with-libraries=iostreams
-    BUILD_COMMAND ./b2 --prefix=${BOOST_ROOT_DIR} --with-iostreams install
-    BUILD_IN_SOURCE true
-    INSTALL_COMMAND ""
-    )
-ExternalProject_Get_Property(Boost install_dir)
-set(Boost_INCLUDE_DIRS ${install_dir}/src/Boost)
+# requires boost
+find_package(Boost REQUIRED COMPONENTS iostreams)
 
 # VSM setup
 add_subdirectory(VirtualSpaceMeshnet)
@@ -30,5 +19,5 @@ add_executable(sim_node
   src/particles.cpp
   src/zmq_http_server.cpp
 )
-target_link_libraries(sim_node PUBLIC vsm boost_iostreams)
+target_link_libraries(sim_node PUBLIC vsm ${Boost_LIBRARIES})
 target_include_directories(sim_node PUBLIC include ${Boost_INCLUDE_DIRS})
