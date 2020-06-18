@@ -2,25 +2,62 @@ R"#(
 <!DOCTYPE html>
 <html>
 
+<head>
 <title>Particle Life Sim</title>
+<style>
+
+body { background-color: black; }
+
+#fullscreen {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#statusbar {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+.halfscreen {
+  width: auto;
+  height: 100%;
+  object-fit: cover;
+}
+
+#network { float: left; }
+#particles { float: right; }
+
+
+</style>
+</head>
 
 <body>
-
-<img id="display" src="display" style="width:100%;height:auto;position:absolute;top:0;left:0;">
+<div id="fullscreen">
+  <img id="network" class="halfscreen" src="particles" >
+  <img id="particles" class="halfscreen" src="particles" >
+  <span id="statusbar">Not Connected</p>
+</div>
 
 <script>
-const display = document.getElementById("display");
+const particles = document.getElementById("particles")
+const statusbar = document.getElementById("statusbar")
 var time = new Date().getTime()
-var avg_frame_time = 0
-const update_display = () => {
+var avg_frame_time = 1000
+const update_particles = () => {
   let new_time = new Date().getTime()
-  display.src = 'display?' + new_time
-  avg_frame_time += (new_time - time - avg_frame_time) * 0.01
-  console.log(avg_frame_time)
+  particles.src = 'particles?' + new_time
+  avg_frame_time += (new_time - time - avg_frame_time) * 0.1
+  statusbar.innerHTML = (1000 / avg_frame_time).toFixed(2) + ' FPS'
   time = new_time
 }
-display.addEventListener("load", update_display)
-display.addEventListener("error", update_display)
+particles.addEventListener("load", update_particles)
+particles.addEventListener("error", update_particles)
 </script>
 
 </body>

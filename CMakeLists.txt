@@ -22,7 +22,7 @@ add_subdirectory(VirtualSpaceMeshnet)
 # C++ setup
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
 add_executable(sim_node
   src/sim_node.cpp

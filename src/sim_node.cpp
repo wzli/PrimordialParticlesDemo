@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
         return response;
     });
 
-    http_server.addRequestHandler("/display", [&](zmq::message_t) {
+    http_server.addRequestHandler("/particles", [&](zmq::message_t) {
         std::string response_string =
                 "HTTP/1.1 200 OK\r\n"
                 "Content-Type: image/svg+xml\r\n"
