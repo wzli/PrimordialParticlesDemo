@@ -25,7 +25,7 @@ public:
     struct Config {
         Point simulation_origin = {0, 0};
         float simulation_radius = 50;
-        float simulation_density = 0.12;
+        float simulation_density = 0.1;
         float travel_speed = 0.67f;
         float neighbor_radius = 5.0f;
         float close_radius = 1.3f;
@@ -41,6 +41,8 @@ public:
 
     const RTree& getRTree() const { return _rtree; }
     const std::unordered_map<uint32_t, Particle>& getParticles() const { return _particles; }
+
+    void spawnParticle(const Point& position, bool insert_rtree = true);
 
 private:
     void respawnParticles();

@@ -84,6 +84,22 @@ int main(int argc, char* argv[]) {
         return response;
     });
 
+    http_server.addRequestHandler("/spawn", [&](zmq::message_t msg) {
+        float x, y;
+        if (sscanf(static_cast<const char*>(msg.data()), "GET /spawn?x=%f&y=%f HTTP", &x, &y) ==
+                2) {
+            Particles::Point position(x, y);
+            boost::geometry::subtract_value(position, 0.5f);
+            boost::geometry::multiply_value(
+                    position, particles.getConfig().simulation_radius * M_SQRT2);
+            boost::geometry::add_point(position, particles.getConfig().simulation_origin);
+            particles.spawnParticle(position);
+        }
+        std::string response_data = "HTTP/1.1 200 OK\r\n\r\n";
+        zmq::message_t response(response_data.c_str(), response_data.size());
+        return response;
+    });
+
     http_server.addRequestHandler("/particles", [&](zmq::message_t) {
         std::string response_string =
                 "HTTP/1.1 200 OK\r\n"

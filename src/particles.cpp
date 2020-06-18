@@ -44,17 +44,24 @@ void Particles::update() {
     rebuildRTree();
 }
 
+void Particles::spawnParticle(const Point& position, bool insert_rtree) {
+    uint32_t id = _random_generator();
+    while (_particles.find(id) != _particles.end()) {
+        id = _random_generator();
+    }
+    _particles[id] = {id, 0, 0, 0, position, {_config.travel_speed, 0}};
+    if (insert_rtree) {
+        _rtree.insert(PointValue(position, id));
+    }
+}
+
 void Particles::respawnParticles() {
     while (_particles.size() < M_PI * _config.simulation_radius * _config.simulation_radius *
                                        _config.simulation_density) {
-        uint32_t id = _random_generator();
-        while (_particles.find(id) != _particles.end()) {
-            id = _random_generator();
-        }
         Point position(
                 _uniform_distribution(_random_generator), _uniform_distribution(_random_generator));
         bg::add_point(position, _config.simulation_origin);
-        _particles[id] = {id, 0, 0, 0, position, {_config.travel_speed, 0}};
+        spawnParticle(position, false);
     }
 }
 
