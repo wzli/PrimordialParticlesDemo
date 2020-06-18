@@ -1,6 +1,7 @@
 #include <display.hpp>
 #include <particles.hpp>
 #include <zmq_http_server.hpp>
+#include <vsm/zmq_transport.hpp>
 
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>
@@ -54,6 +55,21 @@ int main(int argc, char* argv[]) {
     Particles::Config sim_config;
     Particles particles(sim_config);
 
+    vsm::MeshNode::Config mesh_config{
+            vsm::msecs(1),  // peer update interval
+            {
+                    "self_name",              // name
+                    "udp://127.0.0.1:11511",  // address
+                    {100, 100},               // coordinates
+                    4,                        // connection_degree
+                    200,                      // lookup size
+                    0,                        // rank decay
+            },
+            std::make_shared<vsm::ZmqTransport>("udp://*:11511"),  // transport
+            std::make_shared<vsm::Logger>(),                       // logger
+    };
+    vsm::MeshNode mesh_node(mesh_config);
+
     Display display;
 
     ZmqHttpServer http_server(http_port);
@@ -77,6 +93,26 @@ int main(int argc, char* argv[]) {
         particles.update();
         std::stringstream svg_stream, out_stream;
         display.drawParticlesSvg(svg_stream, particles);
+
+        bio::filtering_streambuf<bio::input> out;
+        out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_compression)));
+        out.push(svg_stream);
+        bio::copy(out, out_stream);
+
+        response_string += out_stream.str();
+
+        zmq::message_t response(response_string.c_str(), response_string.size());
+        return response;
+    });
+
+    http_server.addRequestHandler("/network", [&](zmq::message_t) {
+        std::string response_string =
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: image/svg+xml\r\n"
+                "Content-Encoding: gzip\r\n"
+                "\r\n";
+        std::stringstream svg_stream, out_stream;
+        display.drawNetworkSvg(svg_stream, mesh_node);
 
         bio::filtering_streambuf<bio::input> out;
         out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_compression)));

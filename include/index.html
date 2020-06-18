@@ -8,7 +8,7 @@ R"#(
 
 body { background-color: black; }
 
-p, h1, span {
+p, h1 {
   color: white;
   font-family: Arial, sans-serif;
 }
@@ -31,6 +31,7 @@ p, h1, span {
   position: absolute;
   bottom: 0;
   right: 0;
+  margin: 0;
 }
 
 #network { float: left; }
@@ -48,9 +49,9 @@ p, h1, span {
 <body>
 <div id="fullscreen">
   <h1 id="title">Distributed Particle Life Simulation</h1>
-  <img id="network" class="halfscreen" src="network" >
+  <p id="statusbar">Not Connected</p>
   <img id="particles" class="halfscreen" src="particles" >
-  <span id="statusbar">Not Connected</p>
+  <object id="network" class="halfscreen" data="network" type="image/svg+xml">
 </div>
 
 <script>
