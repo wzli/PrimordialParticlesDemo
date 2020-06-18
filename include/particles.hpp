@@ -37,6 +37,8 @@ public:
     void update();
 
     const Config& getConfig() const { return _config; }
+    Config& editConfig() { return _config; }
+
     const RTree& getRTree() const { return _rtree; }
     const std::unordered_map<uint32_t, Particle>& getParticles() const { return _particles; }
 
@@ -46,7 +48,7 @@ private:
     void updateParticleNeighborCount(Particle& particle) const;
     void updateParticleVelocity(Particle& particle) const;
 
-    const Config _config;
+    Config _config;
     std::random_device _random_device;
     std::mt19937 _random_generator;
     std::uniform_real_distribution<float> _uniform_distribution;
