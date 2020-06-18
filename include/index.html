@@ -72,6 +72,10 @@ const updateParticles = () => {
   particles.src = 'particles?' + new Date().getTime()
 }
 
+const updateNetwork = () => {
+  network.data = 'network?' + new Date().getTime()
+}
+
 const clickParticles = (e) => {
   const rect = particles.getBoundingClientRect()
   const x = (e.clientX - rect.left) / (rect.right - rect.left)
@@ -84,6 +88,10 @@ particles.addEventListener("load", updateParticles)
 particles.addEventListener("load", updateFps)
 particles.addEventListener("error", updateParticles)
 particles.addEventListener("mousedown", clickParticles)
+
+network.addEventListener("error", updateNetwork)
+setInterval(updateNetwork, 5000)
+
 </script>
 
 </body>
