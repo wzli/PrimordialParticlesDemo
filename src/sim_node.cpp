@@ -10,14 +10,31 @@
 #include <unistd.h>
 #include <iostream>
 
-namespace bio = boost::iostreams;
-
-static constexpr char INDEX_HTML[] =
+static constexpr char INDEX_RESPONSE[] =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "\r\n"
 #include <index.html>
         ;
 
+static constexpr char SVG_RESPONSE_HEADER[] =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: image/svg+xml\r\n"
+        "Content-Encoding: gzip\r\n"
+        "\r\n";
+
 static constexpr char HELP_STRING[] =
         "Usage: sim_node [-i peer0,peer1,...] [-p http_port] [-b mesh_port] public_address";
+
+static std::stringstream compress(std::stringstream& in) {
+    namespace bio = boost::iostreams;
+    std::stringstream ss;
+    bio::filtering_streambuf<bio::input> out;
+    out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_compression)));
+    out.push(in);
+    bio::copy(out, ss);
+    return ss;
+}
 
 int main(int argc, char* argv[]) {
     const char* http_port = "8000";
@@ -75,13 +92,8 @@ int main(int argc, char* argv[]) {
     ZmqHttpServer http_server(http_port);
 
     http_server.addRequestHandler("/", [](zmq::message_t) {
-        std::string response_data =
-                "HTTP/1.1 200 OK\r\n"
-                "Content-Type: text/html\r\n"
-                "\r\n";
-        response_data += INDEX_HTML;
-        zmq::message_t response(response_data.c_str(), response_data.size());
-        return response;
+        return zmq::message_t(
+                const_cast<char*>(INDEX_RESPONSE), sizeof(INDEX_RESPONSE), nullptr, nullptr);
     });
 
     http_server.addRequestHandler("/spawn", [&](zmq::message_t msg) {
@@ -95,50 +107,24 @@ int main(int argc, char* argv[]) {
             boost::geometry::add_point(position, particles.getConfig().simulation_origin);
             particles.spawnParticle(position);
         }
-        std::string response_data = "HTTP/1.1 200 OK\r\n\r\n";
-        zmq::message_t response(response_data.c_str(), response_data.size());
-        return response;
+        static constexpr char response_data[] = "HTTP/1.1 204 No Content\r\n";
+        return zmq::message_t(
+                const_cast<char*>(response_data), sizeof(response_data), nullptr, nullptr);
     });
 
     http_server.addRequestHandler("/particles", [&](zmq::message_t) {
-        std::string response_string =
-                "HTTP/1.1 200 OK\r\n"
-                "Content-Type: image/svg+xml\r\n"
-                "Content-Encoding: gzip\r\n"
-                "\r\n";
         particles.update();
-        std::stringstream svg_stream, out_stream;
+        std::stringstream svg_stream;
         display.drawParticlesSvg(svg_stream, particles);
-
-        bio::filtering_streambuf<bio::input> out;
-        out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_compression)));
-        out.push(svg_stream);
-        bio::copy(out, out_stream);
-
-        response_string += out_stream.str();
-
-        zmq::message_t response(response_string.c_str(), response_string.size());
-        return response;
+        auto response = SVG_RESPONSE_HEADER + compress(svg_stream).str();
+        return zmq::message_t(response.c_str(), response.size());
     });
 
     http_server.addRequestHandler("/network", [&](zmq::message_t) {
-        std::string response_string =
-                "HTTP/1.1 200 OK\r\n"
-                "Content-Type: image/svg+xml\r\n"
-                "Content-Encoding: gzip\r\n"
-                "\r\n";
-        std::stringstream svg_stream, out_stream;
+        std::stringstream svg_stream;
         display.drawNetworkSvg(svg_stream, mesh_node);
-
-        bio::filtering_streambuf<bio::input> out;
-        out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_compression)));
-        out.push(svg_stream);
-        bio::copy(out, out_stream);
-
-        response_string += out_stream.str();
-
-        zmq::message_t response(response_string.c_str(), response_string.size());
-        return response;
+        auto response = SVG_RESPONSE_HEADER + compress(svg_stream).str();
+        return zmq::message_t(response.c_str(), response.size());
     });
 
     while (1) {
