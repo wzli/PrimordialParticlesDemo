@@ -1,12 +1,10 @@
 ---
-version: "3.3"
+version: "2.2"
 
 services:
-  node0:
-    hostname: node0
-    build: &id01
+  node:
+    scale: 4
+    image: particle_life_sim
+    build:
       dockerfile: docker/Dockerfile
       context: ..
-  node1:
-    hostname: node1
-    build: *id01
