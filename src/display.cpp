@@ -59,15 +59,15 @@ void Display::drawNodeSvg(std::stringstream& ss, const vsm::NodeInfoT& node) con
     ss << "<circle ";
     ss << "r=\"" << 16 << "\" ";
     ss << "stroke-width=\"1\" ";
-    ss << "stroke=\"gray\" />\r\n";
+    ss << "stroke=\"maroon\" />\r\n";
 
     ss << "<text text-anchor=\"middle\" fill=\"white\" ";
     ss << "font-family=\"Arial, sans-serif\" ";
-    ss << "font-size=\"5\" >";
+    ss << "font-size=\"4\" >";
     ss << "<tspan x=\"0\" y=\"-4\">" << node.name << "</tspan>";
-    ss << "<tspan x=\"0\" y=\"2\">(" << node.coordinates->x() << ", " << node.coordinates->y()
+    ss << "<tspan x=\"0\" y=\"1\">(" << node.coordinates->x() << ", " << node.coordinates->y()
        << ")</tspan>";
-    ss << "<tspan x=\"0\" y=\"8\">" << link << "</tspan>";
+    ss << "<tspan x=\"0\" y=\"6\">" << link << "</tspan>";
     ss << "</text>";
 
     ss << "</g>\r\n";
