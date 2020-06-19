@@ -16,7 +16,7 @@ static constexpr int UPDATE_INTERVAL = 20;  // ms
 static vsm::MeshNode::Config mesh_config{
         vsm::msecs(500),  // peer update interval
         {
-                "",      // name
+                "node",  // name
                 "",      // address
                 {0, 0},  // coordinates
                 10,      // connection_degree

@@ -1,0 +1,12 @@
+---
+version: "3.3"
+
+services:
+  node0:
+    hostname: node0
+    build: &id01
+      dockerfile: docker/Dockerfile
+      context: ..
+  node1:
+    hostname: node1
+    build: *id01
