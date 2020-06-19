@@ -16,12 +16,12 @@ static constexpr int UPDATE_INTERVAL = 20;  // ms
 static vsm::MeshNode::Config mesh_config{
         vsm::msecs(500),  // peer update interval
         {
-                "node_name",              // name
-                "udp://127.0.0.1:11511",  // address
-                {0, 0},                   // coordinates
-                10,                       // connection_degree
-                200,                      // lookup size
-                0,                        // rank decay
+                "",      // name
+                "",      // address
+                {0, 0},  // coordinates
+                10,      // connection_degree
+                200,     // lookup size
+                0,       // rank decay
         },
         std::make_shared<vsm::ZmqTransport>("udp://*:11511"),  // transport
         std::make_shared<vsm::Logger>(),                       // logger
@@ -41,7 +41,8 @@ static constexpr char SVG_RESPONSE_HEADER[] =
         "\r\n";
 
 static constexpr char HELP_STRING[] =
-        "Usage: sim_node [-i peer0,peer1,...] [-p http_port] [-b mesh_port] public_address";
+        "Usage: sim_node [-n name] [-i peer0,peer1,...] [-p http_port] [-b mesh_port] "
+        "public_address";
 
 static std::stringstream compress(std::stringstream& in) {
     namespace bio = boost::iostreams;
@@ -59,8 +60,11 @@ int main(int argc, char* argv[]) {
     const char* mesh_port = "11511";
     const char* initial_peers = nullptr;
     int opt;
-    while ((opt = getopt(argc, argv, ":i:p:b:")) != -1) {
+    while ((opt = getopt(argc, argv, ":n:i:p:b:")) != -1) {
         switch (opt) {
+            case 'n':
+                mesh_config.peer_manager.name = optarg;
+                break;
             case 'i':
                 initial_peers = optarg;
                 break;
@@ -85,7 +89,9 @@ int main(int argc, char* argv[]) {
         puts(HELP_STRING);
         return -1;
     }
+
     printf("i %s p %s b %s a %s\n", initial_peers, http_port, mesh_port, argv[optind]);
+    mesh_config.peer_manager.address = std::string("udp://") + argv[optind] + ":" + mesh_port;
 
     // particle sim objects
     Display display;
