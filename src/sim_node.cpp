@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
 
     while (1) {
         try {
-            http_server.poll(1000);
+            http_server.poll();
         } catch (const zmq::error_t& e) {
             puts(e.what());
         }

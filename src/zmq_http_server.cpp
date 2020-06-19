@@ -6,20 +6,29 @@ static constexpr char HTTP_404[] =
         "\r\n"
         "404 Page Not Found";
 
-void ZmqHttpServer::poll(int receive_timeout, int send_timeout) {
-    _http_socket.set(zmq::sockopt::rcvtimeo, receive_timeout);
-    _http_socket.set(zmq::sockopt::sndtimeo, send_timeout);
-    zmq::message_t request_handle;
+void ZmqHttpServer::poll(int timeout) {
+    _timers.execute();
+
+    // receive request handle
     zmq::recv_result_t recv_result;
+    zmq::message_t request_handle;
+    timeout = std::min<int>(timeout, _timers.timeout() & 0x7FFFFFFF);
+    _http_socket.set(zmq::sockopt::rcvtimeo, timeout);
     recv_result = _http_socket.recv(request_handle);
     if (!recv_result || *recv_result != 5) {
         return;
     };
+
+    // receive request
     zmq::message_t request;
+    timeout = std::min<int>(timeout, _timers.timeout() & 0x7FFFFFFF);
+    _http_socket.set(zmq::sockopt::rcvtimeo, timeout);
     recv_result = _http_socket.recv(request);
     if (!recv_result || *recv_result <= 0) {
         return;
     }
+
+    // parse url path
     char path[128];
     parsePath(path, sizeof(path), static_cast<const char*>(request.data()));
     auto request_handler = _request_handlers.find(path);
@@ -27,6 +36,8 @@ void ZmqHttpServer::poll(int receive_timeout, int send_timeout) {
         sendResponse(request_handle, HTTP_404, sizeof(HTTP_404));
         return;
     }
+
+    // create and send response
     auto response = request_handler->second(std::move(request));
     sendResponse(request_handle, response);
 }
@@ -37,8 +48,9 @@ void ZmqHttpServer::parsePath(char* path, size_t len, const char* request_data) 
     if (sscanf(static_cast<const char*>(request_data), format, path) < 1) {
         return;
     }
-    char* c;
-    for (c = path + 1; isalnum(*c); ++c) {
+    char* c = path + 1;
+    while (isalnum(*c)) {
+        ++c;
     }
     *c = 0;
 }
