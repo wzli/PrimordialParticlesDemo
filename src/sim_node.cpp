@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <iostream>
 
+static constexpr int UPDATE_INTERVAL = 20;  // ms
+
 static constexpr char INDEX_RESPONSE[] =
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/html\r\n"
@@ -69,9 +71,6 @@ int main(int argc, char* argv[]) {
     }
     printf("i %s p %s b %s a %s\n", initial_peers, http_port, mesh_port, argv[optind]);
 
-    Particles::Config sim_config;
-    Particles particles(sim_config);
-
     vsm::MeshNode::Config mesh_config{
             vsm::msecs(1),  // peer update interval
             {
@@ -88,15 +87,17 @@ int main(int argc, char* argv[]) {
     vsm::MeshNode mesh_node(mesh_config);
 
     Display display;
-
+    Particles::Config sim_config;
+    Particles particles(sim_config);
     ZmqHttpServer http_server(http_port);
+    http_server.addTimer(UPDATE_INTERVAL, [&particles](int) { particles.update(); });
 
     http_server.addRequestHandler("/", [](zmq::message_t) {
         return zmq::message_t(
                 const_cast<char*>(INDEX_RESPONSE), sizeof(INDEX_RESPONSE), nullptr, nullptr);
     });
 
-    http_server.addRequestHandler("/spawn", [&](zmq::message_t msg) {
+    http_server.addRequestHandler("/spawn", [&particles](zmq::message_t msg) {
         float x, y;
         if (sscanf(static_cast<const char*>(msg.data()), "GET /spawn?x=%f&y=%f HTTP", &x, &y) ==
                 2) {
@@ -112,15 +113,14 @@ int main(int argc, char* argv[]) {
                 const_cast<char*>(response_data), sizeof(response_data), nullptr, nullptr);
     });
 
-    http_server.addRequestHandler("/particles", [&](zmq::message_t) {
-        particles.update();
+    http_server.addRequestHandler("/particles", [&particles, &display](zmq::message_t) {
         std::stringstream svg_stream;
         display.drawParticlesSvg(svg_stream, particles);
         auto response = SVG_RESPONSE_HEADER + compress(svg_stream).str();
         return zmq::message_t(response.c_str(), response.size());
     });
 
-    http_server.addRequestHandler("/network", [&](zmq::message_t) {
+    http_server.addRequestHandler("/network", [&mesh_node, &display](zmq::message_t) {
         std::stringstream svg_stream;
         display.drawNetworkSvg(svg_stream, mesh_node);
         auto response = SVG_RESPONSE_HEADER + compress(svg_stream).str();
