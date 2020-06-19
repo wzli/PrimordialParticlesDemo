@@ -12,7 +12,7 @@ void ZmqHttpServer::poll(int timeout) {
     // receive request handle
     zmq::recv_result_t recv_result;
     zmq::message_t request_handle;
-    timeout = std::min<int>(timeout, _timers.timeout() & 0x7FFFFFFF);
+    timeout = std::min<uint32_t>(timeout, _timers.timeout());
     _http_socket.set(zmq::sockopt::rcvtimeo, timeout);
     recv_result = _http_socket.recv(request_handle);
     if (!recv_result || *recv_result != 5) {
@@ -21,7 +21,7 @@ void ZmqHttpServer::poll(int timeout) {
 
     // receive request
     zmq::message_t request;
-    timeout = std::min<int>(timeout, _timers.timeout() & 0x7FFFFFFF);
+    timeout = std::min<uint32_t>(timeout, _timers.timeout());
     _http_socket.set(zmq::sockopt::rcvtimeo, timeout);
     recv_result = _http_socket.recv(request);
     if (!recv_result || *recv_result <= 0) {
