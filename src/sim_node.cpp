@@ -6,26 +6,11 @@
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+#include <boost/program_options.hpp>
 
 #include <unistd.h>
 #include <iostream>
 #include <thread>
-
-static constexpr int UPDATE_INTERVAL = 20;  // ms
-
-static vsm::MeshNode::Config mesh_config{
-        vsm::msecs(500),  // peer update interval
-        {
-                "node",  // name
-                "",      // address
-                {0, 0},  // coordinates
-                10,      // connection_degree
-                200,     // lookup size
-                0,       // rank decay
-        },
-        std::make_shared<vsm::ZmqTransport>("udp://*:11511"),  // transport
-        std::make_shared<vsm::Logger>(),                       // logger
-};
 
 static constexpr char INDEX_RESPONSE[] =
         "HTTP/1.1 200 OK\r\n"
@@ -40,10 +25,6 @@ static constexpr char SVG_RESPONSE_HEADER[] =
         "Content-Encoding: gzip\r\n"
         "\r\n";
 
-static constexpr char HELP_STRING[] =
-        "Usage: sim_node [-n name] [-i peer0,peer1,...] [-p http_port] [-b mesh_port] "
-        "public_address";
-
 static std::stringstream compress(std::stringstream& in) {
     namespace bio = boost::iostreams;
     std::stringstream ss;
@@ -56,54 +37,70 @@ static std::stringstream compress(std::stringstream& in) {
 
 int main(int argc, char* argv[]) {
     // parse arguments
-    const char* http_port = "8000";
-    const char* mesh_port = "11511";
-    const char* initial_peers = nullptr;
-    int opt;
-    while ((opt = getopt(argc, argv, ":n:i:p:b:")) != -1) {
-        switch (opt) {
-            case 'n':
-                mesh_config.peer_manager.name = optarg;
-                break;
-            case 'i':
-                initial_peers = optarg;
-                break;
-            case 'p':
-                http_port = optarg;
-                break;
-            case 'b':
-                mesh_port = optarg;
-                break;
-            case '?':
-                puts(HELP_STRING);
-                std::cerr << "Unknown option: '" << static_cast<char>(optopt) << "'" << std::endl;
-                return -1;
-            case ':':
-                puts(HELP_STRING);
-                std::cerr << "Option: '" << static_cast<char>(optopt) << "' requires argument"
-                          << std::endl;
-                return -1;
+    namespace po = boost::program_options;
+    po::variables_map args;
+    try {
+        po::options_description desc("Allowed options");
+        // clang-format off
+        desc.add_options()
+        ("name,n", po::value<std::string>()->default_value("node"), "mesh node name")
+        ("address,a", po::value<std::string>()->required(), "mesh node external address")
+        ("x-coord,x", po::value<float>()->default_value(0), "mesh node x coordinate")
+        ("y-coord,y", po::value<float>()->default_value(0), "mesh node y coordinate")
+        ("bootstrap-peer,b", po::value<std::vector<std::string>>(), "mesh bootstrap address")
+        ("mesh-port,P", po::value<uint32_t>()->default_value(11511), "mesh node UDP port")
+        ("http-port,p", po::value<uint32_t>()->default_value(8000), "http server TCP port")
+        ("sim-interval,i", po::value<uint32_t>()->default_value(20), "sim update interval (ms)")
+        ("mesh-interval,I", po::value<uint32_t>()->default_value(500), "mesh update interval (ms)")
+        ("help,h", "produce help message");
+        // clang-format on
+        po::positional_options_description p;
+        p.add("address", 1).add("bootstrap-peer", -1);
+        po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), args);
+        if (args.count("help")) {
+            std::cout << "Usage: " << argv[0];
+            std::cout << " [options] address [bootstrap-peer] [bootstrap-peer] ..." << std::endl;
+            std::cout << desc << std::endl;
+            return 0;
         }
-    }
-    if (argc <= optind) {
-        puts(HELP_STRING);
+        po::notify(args);
+    } catch (const po::error& e) {
+        std::cout << e.what() << std::endl;
         return -1;
     }
 
-    printf("i %s p %s b %s a %s\n", initial_peers, http_port, mesh_port, argv[optind]);
-    mesh_config.peer_manager.address = std::string("udp://") + argv[optind] + ":" + mesh_port;
+    // create config from parsed arguments
+    auto http_port = std::to_string(args["http-port"].as<uint32_t>());
+    auto mesh_port = std::to_string(args["mesh-port"].as<uint32_t>());
+    vsm::Vec2 coords(args["x-coord"].as<float>(), args["y-coord"].as<float>());
+
+    vsm::MeshNode::Config mesh_config{
+            vsm::msecs(args["mesh-interval"].as<uint32_t>()),  // peer update interval
+            {
+                    args["name"].as<std::string>(),                                  // name
+                    "udp://" + args["address"].as<std::string>() + ":" + mesh_port,  // address
+                    coords,                                                          // coordinates
+                    6,    // connection_degree
+                    200,  // lookup size
+                    0,    // rank decay
+            },
+            std::make_shared<vsm::ZmqTransport>("udp://*:" + mesh_port),  // transport
+            nullptr,                                                      // logger
+    };
 
     // particle sim objects
     Display display;
     Particles::Config sim_config;
+    sim_config.simulation_origin = {coords.x(), coords.y()};
     Particles particles(sim_config);
 
     // network objects
     vsm::MeshNode mesh_node(mesh_config);
-    ZmqHttpServer http_server(http_port);
+    ZmqHttpServer http_server(http_port.c_str());
 
     // particle sim update timer
-    http_server.addTimer(UPDATE_INTERVAL, [&particles](int) { particles.update(); });
+    http_server.addTimer(
+            args["sim-interval"].as<uint32_t>(), [&particles](int) { particles.update(); });
 
     // default page
     http_server.addRequestHandler("/", [](zmq::message_t) {

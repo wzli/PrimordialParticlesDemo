@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.0.2)
 
 project(PrimoridalParticlesDemo)
 
-# requires boost
-find_package(Boost REQUIRED COMPONENTS iostreams)
+# Boost setup
+find_package(Boost REQUIRED COMPONENTS iostreams program_options)
 
 # VSM setup
 add_subdirectory(VirtualSpaceMeshnet)
