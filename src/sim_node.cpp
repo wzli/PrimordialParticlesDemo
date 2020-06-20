@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
     // add bootstrap peers
     if (args.count("bootstrap-peer")) {
         for (const auto& peer : args["bootstrap-peer"].as<std::vector<std::string>>()) {
-            mesh_node.getPeerManager().latchPeer(("udp://" + peer).c_str(), 1);
+            mesh_node.getPeerTracker().latchPeer(("udp://" + peer).c_str(), 1);
         }
     }
 

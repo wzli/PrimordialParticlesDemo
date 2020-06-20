@@ -10,13 +10,13 @@ void Display::writeSvgStartTag(std::stringstream& ss, float x, float y, float r)
 }
 
 void Display::drawNetworkSvg(std::stringstream& ss, vsm::MeshNode& mesh_node) const {
-    const auto& self = mesh_node.getPeerManager().getNodeInfo();
+    const auto& self = mesh_node.getPeerTracker().getNodeInfo();
     if (!self.coordinates) {
         return;
     }
     writeSvgStartTag(ss, self.coordinates->x(), self.coordinates->y(), 50);
     for (const auto& peer : mesh_node.getConnectedPeers()) {
-        const auto& peers = mesh_node.getPeerManager().getPeers();
+        const auto& peers = mesh_node.getPeerTracker().getPeers();
         const auto& peer_node = peers.find(peer);
         if (peer_node != peers.end()) {
             drawNodeSvg(ss, peer_node->second.node_info, self.coordinates.get());
@@ -81,10 +81,10 @@ void Display::drawNodeSvg(
     ss << "<text text-anchor=\"middle\" fill=\"white\" ";
     ss << "font-family=\"Arial, sans-serif\" ";
     ss << "font-size=\"2\" >\r\n";
-    ss << "<tspan x=\"0\" y=\"-2\">" << node.name << "</tspan>\r\n";
+    ss << "<tspan x=\"0\" y=\"-2\">" << link << "</tspan>\r\n";
     ss << "<tspan x=\"0\" y=\"1\">(" << node.coordinates->x() << ", " << node.coordinates->y()
        << ")</tspan>\r\n";
-    ss << "<tspan x=\"0\" y=\"4\">" << link << "</tspan>\r\n";
+    ss << "<tspan x=\"0\" y=\"4\">" << node.name << "</tspan>\r\n";
     ss << "</text>";
     ss << "</g>";
     ss << "</a>\r\n";
