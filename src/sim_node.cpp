@@ -98,6 +98,13 @@ int main(int argc, char* argv[]) {
     vsm::MeshNode mesh_node(mesh_config);
     ZmqHttpServer http_server(http_port.c_str());
 
+    // add bootstrap peers
+    if (args.count("bootstrap-peer")) {
+        for (const auto& peer : args["bootstrap-peer"].as<std::vector<std::string>>()) {
+            mesh_node.getPeerManager().latchPeer(peer.c_str(), 1);
+        }
+    }
+
     // particle sim update timer
     http_server.addTimer(
             args["sim-interval"].as<uint32_t>(), [&particles](int) { particles.update(); });
