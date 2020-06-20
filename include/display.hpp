@@ -8,7 +8,7 @@ struct Display {
         size_t svg_width = 1000;
         size_t svg_height = 1000;
         std::string svg_bg_color = "black";
-        float particle_radius = 0.2f;
+        float particle_radius = 0.3f;
     };
 
     Config config;
