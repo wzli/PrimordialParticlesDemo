@@ -80,14 +80,13 @@ void Display::drawNodeSvg(
 
     ss << "<text text-anchor=\"middle\" fill=\"white\" ";
     ss << "font-family=\"Arial, sans-serif\" ";
-    ss << "font-size=\"2\" >";
-    ss << "<tspan x=\"0\" y=\"-2\">" << node.name << "</tspan>";
+    ss << "font-size=\"2\" >\r\n";
+    ss << "<tspan x=\"0\" y=\"-2\">" << node.name << "</tspan>\r\n";
     ss << "<tspan x=\"0\" y=\"1\">(" << node.coordinates->x() << ", " << node.coordinates->y()
-       << ")</tspan>";
-    ss << "<tspan x=\"0\" y=\"4\">" << link << "</tspan>";
+       << ")</tspan>\r\n";
+    ss << "<tspan x=\"0\" y=\"4\">" << link << "</tspan>\r\n";
     ss << "</text>";
-
-    ss << "</g>\r\n";
+    ss << "</g>";
     ss << "</a>\r\n";
 }
 
