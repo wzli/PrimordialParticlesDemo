@@ -48,5 +48,5 @@ EXPOSE 80/tcp
 EXPOSE 11511/udp
 
 # launch using hostname as address
-CMD address=$(hostname -I); sim_node --http-port 80 --mesh-port 11511 $(spiral ${address##*.} 30) \
+CMD address=$(hostname -I); sim_node --http-port 80 --mesh-port 11511 $(spiral $((${address##*.} - 2)) 30) \
   --name $(hostname) --bootstrap-peer ${address%.*}.2:11511 $address

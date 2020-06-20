@@ -13,8 +13,9 @@ int main(int argc, char* argv[]) {
     }
     float r = sqrtf(n / M_PI);
     float a = 2 * M_PI * r;
-    float x = r * cosf(a) * scale;
-    float y = r * sinf(a) * scale;
+    r *= scale;
+    float x = r * cosf(a);
+    float y = r * sinf(a);
     printf("-x %f -y %f", x, y);
     return 0;
 }
