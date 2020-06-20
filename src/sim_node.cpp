@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
         ("address,a", po::value<std::string>()->required(), "mesh node external address")
         ("x-coord,x", po::value<float>()->default_value(0), "mesh node x coordinate")
         ("y-coord,y", po::value<float>()->default_value(0), "mesh node y coordinate")
-        ("bootstrap-peer,b", po::value<std::vector<std::string>>(), "mesh bootstrap address")
+        ("bootstrap-peer,b", po::value<std::vector<std::string>>(), "mesh bootstrap peer (address:port)")
         ("mesh-port,P", po::value<uint32_t>()->default_value(11511), "mesh node UDP port")
         ("http-port,p", po::value<uint32_t>()->default_value(8000), "http server TCP port")
         ("sim-interval,i", po::value<uint32_t>()->default_value(20), "sim update interval (ms)")
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
     // add bootstrap peers
     if (args.count("bootstrap-peer")) {
         for (const auto& peer : args["bootstrap-peer"].as<std::vector<std::string>>()) {
-            mesh_node.getPeerManager().latchPeer(peer.c_str(), 1);
+            mesh_node.getPeerManager().latchPeer(("udp://" + peer).c_str(), 1);
         }
     }
 

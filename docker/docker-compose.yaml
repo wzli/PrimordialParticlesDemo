@@ -2,7 +2,7 @@
 version: "2.2"
 
 services:
-  node:
+  sim_node:
     scale: 4
     image: particle_life_sim
     build:

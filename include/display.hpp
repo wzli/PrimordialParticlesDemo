@@ -15,7 +15,8 @@ struct Display {
 
     void drawNetworkSvg(std::stringstream& ss, vsm::MeshNode& mesh_node) const;
     void drawParticlesSvg(std::stringstream& ss, const Particles& particles) const;
-    void drawNodeSvg(std::stringstream& ss, const vsm::NodeInfoT& node) const;
+    void drawNodeSvg(std::stringstream& ss, const vsm::NodeInfoT& node,
+            const vsm::Vec2* from = nullptr) const;
     void writeSvgStartTag(std::stringstream& ss, float x, float y, float r) const;
     static const char* assignParticleColor(const Particles::Particle& particle);
 };

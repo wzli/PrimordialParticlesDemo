@@ -14,9 +14,15 @@ void Display::drawNetworkSvg(std::stringstream& ss, vsm::MeshNode& mesh_node) co
     if (!self.coordinates) {
         return;
     }
-    writeSvgStartTag(ss, self.coordinates->x(), self.coordinates->y(), 100);
+    writeSvgStartTag(ss, self.coordinates->x(), self.coordinates->y(), 50);
+    for (const auto& peer : mesh_node.getConnectedPeers()) {
+        const auto& peers = mesh_node.getPeerManager().getPeers();
+        const auto& peer_node = peers.find(peer);
+        if (peer_node != peers.end()) {
+            drawNodeSvg(ss, peer_node->second.node_info, self.coordinates.get());
+        }
+    }
     drawNodeSvg(ss, self);
-
     ss << "</svg>\r\n";
 }
 
@@ -42,9 +48,20 @@ void Display::drawParticlesSvg(std::stringstream& ss, const Particles& particles
     ss << "</svg>\r\n";
 }
 
-void Display::drawNodeSvg(std::stringstream& ss, const vsm::NodeInfoT& node) const {
+void Display::drawNodeSvg(
+        std::stringstream& ss, const vsm::NodeInfoT& node, const vsm::Vec2* from) const {
     if (!node.coordinates) {
         return;
+    }
+
+    if (from) {
+        ss << "<line ";
+        ss << "stroke=\"dimgray\" ";
+        ss << "stroke-width=\".3\" ";
+        ss << "x1=\"" << from->x() << "\" ";
+        ss << "y1=\"" << from->y() << "\" ";
+        ss << "x2=\"" << node.coordinates->x() << "\" ";
+        ss << "y2=\"" << node.coordinates->y() << "\" />\r\n";
     }
 
     int addr_start = node.address.find("/") + 2;
@@ -56,18 +73,18 @@ void Display::drawNodeSvg(std::stringstream& ss, const vsm::NodeInfoT& node) con
     ss << node.coordinates->x() << ",";
     ss << node.coordinates->y() << ")\" >\r\n";
 
-    ss << "<circle ";
-    ss << "r=\"" << 16 << "\" ";
-    ss << "stroke-width=\"1\" ";
-    ss << "stroke=\"maroon\" />\r\n";
+    ss << "<ellipse ";
+    ss << "rx=\"10\" ry=\"6\" ";
+    ss << "stroke-width=\".5\" ";
+    ss << "stroke=\"" << (from ? "darkslategray" : "maroon") << "\" />\r\n";
 
     ss << "<text text-anchor=\"middle\" fill=\"white\" ";
     ss << "font-family=\"Arial, sans-serif\" ";
-    ss << "font-size=\"4\" >";
-    ss << "<tspan x=\"0\" y=\"-4\">" << node.name << "</tspan>";
+    ss << "font-size=\"2\" >";
+    ss << "<tspan x=\"0\" y=\"-2\">" << node.name << "</tspan>";
     ss << "<tspan x=\"0\" y=\"1\">(" << node.coordinates->x() << ", " << node.coordinates->y()
        << ")</tspan>";
-    ss << "<tspan x=\"0\" y=\"6\">" << link << "</tspan>";
+    ss << "<tspan x=\"0\" y=\"4\">" << link << "</tspan>";
     ss << "</text>";
 
     ss << "</g>\r\n";
