@@ -13,7 +13,7 @@ struct Display {
 
     Config config;
 
-    void drawNetworkSvg(std::stringstream& ss, vsm::MeshNode& mesh_node) const;
+    void drawNetworkSvg(std::stringstream& ss, const vsm::MeshNode& mesh_node) const;
     void drawParticlesSvg(std::stringstream& ss, const Particles& particles) const;
     void drawNodeSvg(std::stringstream& ss, const vsm::NodeInfoT& node,
             const std::vector<float>* from = nullptr) const;
