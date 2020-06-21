@@ -11,15 +11,15 @@ void Display::writeSvgStartTag(std::stringstream& ss, float x, float y, float r)
 
 void Display::drawNetworkSvg(std::stringstream& ss, vsm::MeshNode& mesh_node) const {
     const auto& self = mesh_node.getPeerTracker().getNodeInfo();
-    if (!self.coordinates) {
+    if (self.coordinates.empty()) {
         return;
     }
-    writeSvgStartTag(ss, self.coordinates->x(), self.coordinates->y(), 50);
+    writeSvgStartTag(ss, self.coordinates[0], self.coordinates[1], 50);
     for (const auto& peer : mesh_node.getConnectedPeers()) {
         const auto& peers = mesh_node.getPeerTracker().getPeers();
         const auto& peer_node = peers.find(peer);
         if (peer_node != peers.end()) {
-            drawNodeSvg(ss, peer_node->second.node_info, self.coordinates.get());
+            drawNodeSvg(ss, peer_node->second.node_info, &self.coordinates);
         }
     }
     drawNodeSvg(ss, self);
@@ -49,8 +49,8 @@ void Display::drawParticlesSvg(std::stringstream& ss, const Particles& particles
 }
 
 void Display::drawNodeSvg(
-        std::stringstream& ss, const vsm::NodeInfoT& node, const vsm::Vec2* from) const {
-    if (!node.coordinates) {
+        std::stringstream& ss, const vsm::NodeInfoT& node, const std::vector<float>* from) const {
+    if (node.coordinates.empty()) {
         return;
     }
 
@@ -58,10 +58,10 @@ void Display::drawNodeSvg(
         ss << "<line ";
         ss << "stroke=\"dimgray\" ";
         ss << "stroke-width=\".3\" ";
-        ss << "x1=\"" << from->x() << "\" ";
-        ss << "y1=\"" << from->y() << "\" ";
-        ss << "x2=\"" << node.coordinates->x() << "\" ";
-        ss << "y2=\"" << node.coordinates->y() << "\" />\r\n";
+        ss << "x1=\"" << (*from)[0] << "\" ";
+        ss << "y1=\"" << (*from)[1] << "\" ";
+        ss << "x2=\"" << node.coordinates[0] << "\" ";
+        ss << "y2=\"" << node.coordinates[1] << "\" />\r\n";
     }
 
     int addr_start = node.address.find("/") + 2;
@@ -70,8 +70,8 @@ void Display::drawNodeSvg(
 
     ss << "<a target=\"_top\" xlink:href=\"http://" << link << "\" >\r\n";
     ss << "<g transform=\"translate(";
-    ss << node.coordinates->x() << ",";
-    ss << node.coordinates->y() << ")\" >\r\n";
+    ss << node.coordinates[0] << ",";
+    ss << node.coordinates[1] << ")\" >\r\n";
 
     ss << "<ellipse ";
     ss << "rx=\"10\" ry=\"6\" ";
@@ -82,7 +82,7 @@ void Display::drawNodeSvg(
     ss << "font-family=\"Arial, sans-serif\" ";
     ss << "font-size=\"2\" >\r\n";
     ss << "<tspan x=\"0\" y=\"-2\">" << link << "</tspan>\r\n";
-    ss << "<tspan x=\"0\" y=\"1\">(" << node.coordinates->x() << ", " << node.coordinates->y()
+    ss << "<tspan x=\"0\" y=\"1\">(" << node.coordinates[0] << ", " << node.coordinates[1]
        << ")</tspan>\r\n";
     ss << "<tspan x=\"0\" y=\"4\">" << node.name << "</tspan>\r\n";
     ss << "</text>";

@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
     // create config from parsed arguments
     auto http_port = std::to_string(args["http-port"].as<uint32_t>());
     auto mesh_port = std::to_string(args["mesh-port"].as<uint32_t>());
-    vsm::Vec2 coords(args["x-coord"].as<float>(), args["y-coord"].as<float>());
+    std::vector<float> coords{args["x-coord"].as<float>(), args["y-coord"].as<float>()};
 
     vsm::MeshNode::Config mesh_config{
             vsm::msecs(args["mesh-interval"].as<uint32_t>()),  // peer update interval
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
     // particle sim objects
     Display display;
     Particles::Config sim_config;
-    sim_config.simulation_origin = {coords.x(), coords.y()};
+    sim_config.simulation_origin = {coords[0], coords[1]};
     Particles particles(sim_config);
 
     // network objects
