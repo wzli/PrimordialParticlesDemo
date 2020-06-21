@@ -71,20 +71,20 @@ void Display::drawNodeSvg(
     ss << "<a target=\"_top\" xlink:href=\"http://" << link << "\" >\r\n";
     ss << "<g transform=\"translate(";
     ss << node.coordinates[0] << ",";
-    ss << node.coordinates[1] << ")\" >\r\n";
+    ss << node.coordinates[1] << ") ";
+    ss << "scale(.5) \" >\r\n";
 
     ss << "<ellipse ";
-    ss << "rx=\"10\" ry=\"6\" ";
-    ss << "stroke-width=\".5\" ";
+    ss << "rx=\"20\" ry=\"12\" ";
     ss << "stroke=\"" << (from ? "darkslategray" : "maroon") << "\" />\r\n";
 
     ss << "<text text-anchor=\"middle\" fill=\"white\" ";
     ss << "font-family=\"Arial, sans-serif\" ";
-    ss << "font-size=\"2\" >\r\n";
-    ss << "<tspan x=\"0\" y=\"-2\">" << link << "</tspan>\r\n";
+    ss << "font-size=\"4\" >\r\n";
+    ss << "<tspan x=\"0\" y=\"-5\">" << link << "</tspan>\r\n";
     ss << "<tspan x=\"0\" y=\"1\">(" << node.coordinates[0] << ", " << node.coordinates[1]
        << ")</tspan>\r\n";
-    ss << "<tspan x=\"0\" y=\"4\">" << node.name << "</tspan>\r\n";
+    ss << "<tspan x=\"0\" y=\"7\">" << node.name << "</tspan>\r\n";
     ss << "</text>";
     ss << "</g>";
     ss << "</a>\r\n";
