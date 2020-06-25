@@ -73,10 +73,12 @@ int main(int argc, char* argv[]) {
     }
 
     // create config from parsed arguments
+    Particles::Config sim_config;
+    sim_config.simulation_origin = {args["x-coord"].as<float>(), args["y-coord"].as<float>()};
+    sim_config.simulation_radius = args["sim-radius"].as<float>();
+    sim_config.simulation_density = args["sim-density"].as<float>();
     auto http_port = std::to_string(args["http-port"].as<uint32_t>());
     auto mesh_port = std::to_string(args["mesh-port"].as<uint32_t>());
-    std::vector<float> coords{args["x-coord"].as<float>(), args["y-coord"].as<float>()};
-
     vsm::MeshNode::Config mesh_config{
             vsm::msecs(args["mesh-interval"].as<uint32_t>()),    // peer update interval
             vsm::msecs(args["expiry-interval"].as<uint32_t>()),  // peer update interval
@@ -84,26 +86,22 @@ int main(int argc, char* argv[]) {
             {
                     args["name"].as<std::string>(),                                  // name
                     "udp://" + args["address"].as<std::string>() + ":" + mesh_port,  // address
-                    coords,                                                          // coordinates
-                    6,    // connection_degree
-                    200,  // lookup size
-                    0,    // rank decay
+                    {sim_config.simulation_origin.x(),
+                            sim_config.simulation_origin.y()},  // coordinates
+                    sim_config.simulation_radius,               // power radius
+                    6,                                          // connection_degree
+                    200,                                        // lookup size
+                    0,                                          // rank decay
             },
             std::make_shared<vsm::ZmqTransport>("udp://*:" + mesh_port),  // transport
             nullptr,                                                      // logger
     };
 
-    // particle sim objects
-    Display display;
-    Particles::Config sim_config;
-    sim_config.simulation_origin = {coords[0], coords[1]};
-    sim_config.simulation_radius = args["sim-radius"].as<float>();
-    sim_config.simulation_density = args["sim-density"].as<float>();
+    // create objects from config
     Particles particles(sim_config);
-
-    // network objects
     vsm::MeshNode mesh_node(mesh_config);
     ZmqHttpServer http_server(http_port.c_str());
+    Display display;
 
     // add bootstrap peers
     if (args.count("bootstrap-peer")) {
