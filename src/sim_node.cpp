@@ -45,9 +45,11 @@ int main(int argc, char* argv[]) {
         desc.add_options()
         ("name,n", po::value<std::string>()->default_value("node"), "mesh node name")
         ("address,a", po::value<std::string>()->required(), "mesh node external address")
+        ("bootstrap-peer,b", po::value<std::vector<std::string>>(), "mesh bootstrap peer (address:port)")
         ("x-coord,x", po::value<float>()->default_value(0), "mesh node x coordinate")
         ("y-coord,y", po::value<float>()->default_value(0), "mesh node y coordinate")
-        ("bootstrap-peer,b", po::value<std::vector<std::string>>(), "mesh bootstrap peer (address:port)")
+        ("sim-radius,r", po::value<float>()->default_value(25), "simulation region radius")
+        ("sim-density,d", po::value<float>()->default_value(0.08), "simulation particle density")
         ("mesh-port,P", po::value<uint32_t>()->default_value(11511), "mesh node UDP port")
         ("http-port,p", po::value<uint32_t>()->default_value(8000), "http server TCP port")
         ("sim-interval,i", po::value<uint32_t>()->default_value(20), "sim update interval (ms)")
@@ -95,6 +97,8 @@ int main(int argc, char* argv[]) {
     Display display;
     Particles::Config sim_config;
     sim_config.simulation_origin = {coords[0], coords[1]};
+    sim_config.simulation_radius = args["sim-radius"].as<float>();
+    sim_config.simulation_density = args["sim-density"].as<float>();
     Particles particles(sim_config);
 
     // network objects
