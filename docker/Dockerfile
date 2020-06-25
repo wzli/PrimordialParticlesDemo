@@ -11,7 +11,7 @@ RUN apt install -y \
   cmake \
   libboost-all-dev
 
-WORKDIR /opt/particle_life_sim
+WORKDIR /opt/primordial_particle_sim
 
 # build VSM
 COPY VirtualSpaceMeshnet VirtualSpaceMeshnet
@@ -34,11 +34,11 @@ RUN cd build && cmake .. && make -j
 # create output container
 FROM ubuntu:18.04
 # copy built binaries
-COPY --from=0 /opt/particle_life_sim/build/sim_node \
-  /opt/particle_life_sim/build/spiral \
+COPY --from=0 /opt/primordial_particle_sim/build/sim_node \
+  /opt/primordial_particle_sim/build/spiral \
   /usr/local/bin/
 # copy required libraries
-COPY --from=0 /opt/particle_life_sim/build/VirtualSpaceMeshnet/submodules/libzmq/lib/* \
+COPY --from=0 /opt/primordial_particle_sim/build/VirtualSpaceMeshnet/submodules/libzmq/lib/* \
   /usr/lib/x86_64-linux-gnu/libboost_iostreams* \
   /usr/lib/x86_64-linux-gnu/libboost_program_options* \
   /usr/lib/x86_64-linux-gnu/
