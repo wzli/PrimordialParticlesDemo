@@ -52,6 +52,7 @@ int main(int argc, char* argv[]) {
         ("http-port,p", po::value<uint32_t>()->default_value(8000), "http server TCP port")
         ("sim-interval,i", po::value<uint32_t>()->default_value(20), "sim update interval (ms)")
         ("mesh-interval,I", po::value<uint32_t>()->default_value(500), "mesh update interval (ms)")
+        ("expiry-interval,E", po::value<uint32_t>()->default_value(1000), "particle expiry interval (ms)")
         ("help,h", "produce help message");
         // clang-format on
         po::positional_options_description p;
@@ -75,7 +76,9 @@ int main(int argc, char* argv[]) {
     std::vector<float> coords{args["x-coord"].as<float>(), args["y-coord"].as<float>()};
 
     vsm::MeshNode::Config mesh_config{
-            vsm::msecs(args["mesh-interval"].as<uint32_t>()),  // peer update interval
+            vsm::msecs(args["mesh-interval"].as<uint32_t>()),    // peer update interval
+            vsm::msecs(args["expiry-interval"].as<uint32_t>()),  // peer update interval
+            {},                                                  // ego sphere
             {
                     args["name"].as<std::string>(),                                  // name
                     "udp://" + args["address"].as<std::string>() + ":" + mesh_port,  // address
