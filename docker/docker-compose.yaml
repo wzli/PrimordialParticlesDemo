@@ -3,7 +3,7 @@ version: "2.2"
 
 services:
   sim_node:
-    scale: 32
+    scale: 10
     image: primordial_particle_sim
     build:
       dockerfile: docker/Dockerfile

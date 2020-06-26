@@ -48,6 +48,7 @@ int main(int argc, char* argv[]) {
         ("bootstrap-peer,b", po::value<std::vector<std::string>>(), "mesh bootstrap peer (address:port)")
         ("x-coord,x", po::value<float>()->default_value(0), "mesh node x coordinate")
         ("y-coord,y", po::value<float>()->default_value(0), "mesh node y coordinate")
+        ("connection-degree,c", po::value<uint32_t>()->default_value(6), "nearest peer connections")
         ("sim-radius,r", po::value<float>()->default_value(25), "simulation region radius")
         ("sim-density,d", po::value<float>()->default_value(0.08), "simulation particle density")
         ("mesh-port,P", po::value<uint32_t>()->default_value(11511), "mesh node UDP port")
@@ -91,7 +92,7 @@ int main(int argc, char* argv[]) {
                     {sim_config.simulation_origin.x(),
                             sim_config.simulation_origin.y()},  // coordinates
                     sim_config.simulation_radius,               // power radius
-                    6,                                          // connection_degree
+                    args["connection-degree"].as<uint32_t>(),   // connection_degree
                     200,                                        // lookup size
                     0,                                          // rank decay
             },
@@ -126,8 +127,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-// define particle merging algorithm
-#if 0
+    // define particle merging algorithm
     mesh_node.getEgoSphere().setEntityUpdateHandler(
             [&](vsm::EgoSphere::EntityUpdate* new_entity,
                     const vsm::EgoSphere::EntityUpdate* old_entity, const vsm::NodeInfoT* source) {
@@ -183,7 +183,6 @@ int main(int argc, char* argv[]) {
                         new_entity->entity.data.data(), &new_velocity, sizeof(Particles::Point));
                 return true;
             });
-#endif
 
     // define entity to particle conversion
     const auto read_particles = [&particles](const vsm::EgoSphere::EntityLookup& updates) {
