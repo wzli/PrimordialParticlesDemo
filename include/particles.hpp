@@ -14,13 +14,15 @@ public:
     using RTree = boost::geometry::index::rtree<PointValue, boost::geometry::index::rstar<16>>;
 
     struct Particle {
-        uint32_t id;
-        uint32_t left_neighbors;
-        uint32_t right_neighbors;
-        uint32_t close_neighbors;
         Point position;
         Point velocity;
+        uint32_t id;
+        uint32_t left_neighbors = 0;
+        uint32_t right_neighbors = 0;
+        uint32_t close_neighbors = 0;
     };
+
+    using ParticleLookup = std::unordered_map<uint32_t, Particle>;
 
     struct Config {
         Point simulation_origin = {0, 0};
@@ -34,15 +36,18 @@ public:
     };
 
     Particles(Config config);
-    void update();
+    void update(bool rebuild_tree = true);
+    void spawnParticle(const Point& position, bool insert_rtree = true);
 
+    // accesors
     const Config& getConfig() const { return _config; }
-    Config& editConfig() { return _config; }
+    Config& getConfig() { return _config; }
+
+    const ParticleLookup& getParticles() const { return _particles; }
+    ParticleLookup& getParticles() { return _particles; }
 
     const RTree& getRTree() const { return _rtree; }
-    const std::unordered_map<uint32_t, Particle>& getParticles() const { return _particles; }
-
-    void spawnParticle(const Point& position, bool insert_rtree = true);
+    RTree& getRTree() { return _rtree; }
 
 private:
     void respawnParticles();
@@ -56,5 +61,5 @@ private:
     std::uniform_real_distribution<float> _uniform_distribution;
     RTree _rtree;
     std::vector<PointValue> _insert_buffer;
-    std::unordered_map<uint32_t, Particle> _particles;
+    ParticleLookup _particles;
 };

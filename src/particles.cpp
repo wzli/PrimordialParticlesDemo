@@ -23,7 +23,7 @@ Particles::Particles(Config config)
     }
 }
 
-void Particles::update() {
+void Particles::update(bool rebuild_rtree) {
     // simulate each particle
     for (auto& particle : _particles) {
         // update velocity
@@ -43,15 +43,17 @@ void Particles::update() {
         }
     }
     respawnParticles();
-    rebuildRTree();
+    if (rebuild_rtree) {
+        rebuildRTree();
+    }
 }
 
 void Particles::spawnParticle(const Point& position, bool insert_rtree) {
     uint32_t id = _random_generator();
-    while (_particles.find(id) != _particles.end()) {
+    while (_particles.count(id)) {
         id = _random_generator();
     }
-    _particles[id] = {id, 0, 0, 0, position, {_config.travel_speed, 0}};
+    _particles[id] = {position, {_config.travel_speed, 0}, id};
     if (insert_rtree) {
         _rtree.insert(PointValue(position, id));
     }
