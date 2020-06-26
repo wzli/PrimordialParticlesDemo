@@ -54,6 +54,8 @@ int main(int argc, char* argv[]) {
         ("http-port,p", po::value<uint32_t>()->default_value(8000), "http server TCP port")
         ("sim-interval,i", po::value<uint32_t>()->default_value(20), "sim update interval (ms)")
         ("mesh-interval,I", po::value<uint32_t>()->default_value(500), "mesh update interval (ms)")
+        ("message-size,m", po::value<uint32_t>()->default_value(7000), "transmission message size")
+        ("verbosity,v", po::value<uint32_t>()->default_value(vsm::Logger::WARN), "verbosity filter 0-6")
         ("help,h", "produce help message");
         // clang-format on
         po::positional_options_description p;
@@ -79,6 +81,7 @@ int main(int argc, char* argv[]) {
     auto http_port = std::to_string(args["http-port"].as<uint32_t>());
     auto mesh_port = std::to_string(args["mesh-port"].as<uint32_t>());
     vsm::MeshNode::Config mesh_config{
+            args["message-size"].as<uint32_t>(),               // max message size
             vsm::msecs(args["mesh-interval"].as<uint32_t>()),  // peer update interval
             vsm::msecs(0xFFFFFFFF),                            // entity expiry interval
             {},                                                // ego sphere
@@ -93,8 +96,22 @@ int main(int argc, char* argv[]) {
                     0,                                          // rank decay
             },
             std::make_shared<vsm::ZmqTransport>("udp://*:" + mesh_port),  // transport
-            nullptr,                                                      // logger
+            std::make_shared<vsm::Logger>(),                              // logger
     };
+    // log to console
+    mesh_config.logger->addLogHandler(
+            static_cast<vsm::Logger::Level>(args["verbosity"].as<uint32_t>()),
+            [&](vsm::msecs time, vsm::Logger::Level level, vsm::Error error, const void*,
+                    size_t len) {
+                if (error.type == vsm::EgoSphere::ENTITY_UPDATED) {
+                    return;
+                }
+                std::cout << time.count() << " lv: " << level << ", type: " << error.type
+                          << ", code: " << error.code << ", msg: " << error.what() << std::endl;
+                if (error.type == vsm::MeshNode::MESSAGE_VERIFY_FAIL) {
+                    std::cout << "\tdropped buffer size " << len << std::endl;
+                }
+            });
 
     // create objects from config
     Particles particles(sim_config);
@@ -109,7 +126,8 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // define particle merging algorithm
+// define particle merging algorithm
+#if 0
     mesh_node.getEgoSphere().setEntityUpdateHandler(
             [&](vsm::EgoSphere::EntityUpdate* new_entity,
                     const vsm::EgoSphere::EntityUpdate* old_entity, const vsm::NodeInfoT* source) {
@@ -165,18 +183,16 @@ int main(int argc, char* argv[]) {
                         new_entity->entity.data.data(), &new_velocity, sizeof(Particles::Point));
                 return true;
             });
+#endif
 
     // define entity to particle conversion
     const auto read_particles = [&particles](const vsm::EgoSphere::EntityLookup& updates) {
         for (const auto& update : updates) {
-            // parse particle
             const auto& coords = update.second.entity.coordinates;
-            Particles::Particle particle_update{
-                    {coords[0], coords[1]}, {}, static_cast<uint32_t>(std::stoul(update.first))};
+            uint32_t id = static_cast<uint32_t>(std::stoul(update.first));
+            auto& particle = particles.getParticles()[id] = {{coords[0], coords[1]}, {}, id};
             const auto& data = update.second.entity.data;
-            std::memcpy(&particle_update.velocity, data.data(), data.size());
-            // save particle
-            particles.getParticles()[particle_update.id] = particle_update;
+            std::memcpy(&particle.velocity, data.data(), data.size());
         }
     };
 
