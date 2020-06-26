@@ -36,8 +36,8 @@ public:
     };
 
     Particles(Config config);
-    void update(bool rebuild_tree = true);
-    void spawnParticle(const Point& position, bool insert_rtree = true);
+    void update();
+    void spawnParticle(const Point& position);
 
     // accesors
     const Config& getConfig() const { return _config; }
