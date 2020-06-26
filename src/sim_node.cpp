@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
     auto mesh_port = std::to_string(args["mesh-port"].as<uint32_t>());
     vsm::MeshNode::Config mesh_config{
             vsm::msecs(args["mesh-interval"].as<uint32_t>()),    // peer update interval
-            vsm::msecs(args["expiry-interval"].as<uint32_t>()),  // peer update interval
+            vsm::msecs(args["expiry-interval"].as<uint32_t>()),  // entity expiry interval
             {},                                                  // ego sphere
             {
                     args["name"].as<std::string>(),                                  // name
@@ -110,9 +110,46 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // define particle merging algorithm
+    const auto merge_particles = [&particles](const vsm::EgoSphere::EntityLookup& updates) {
+        auto& lookup = particles.getParticles();
+        for (const auto& update : updates) {
+            // parse particle
+            const auto& coords = update.second.entity.coordinates;
+            Particles::Particle particle_update{
+                    {coords[0], coords[1]}, {}, static_cast<uint32_t>(std::stoul(update.first))};
+            const auto& buf = update.second.entity.data;
+            std::memcpy(&particle_update.velocity, buf.data(), buf.size());
+            // lookup particle
+            lookup[particle_update.id] = particle_update;
+        }
+    };
+
+    // define particle to entity conversion
+    std::vector<vsm::EntityT> entities;
+    const auto generate_entities = [&]() {
+        entities.clear();
+        for (const auto& particle : particles.getParticles()) {
+            vsm::EntityT entity;
+            entity.name = std::to_string(particle.first);
+            entity.coordinates = {particle.second.position.x(), particle.second.position.y()};
+            entity.filter = vsm::Filter::NEAREST;
+            entity.range = sim_config.simulation_radius * 2;
+            entity.expiry = mesh_node.getTimeSync().getTime().count() +
+                            mesh_config.entity_expiry_interval.count();
+            entity.data.resize(sizeof(Particles::Point));
+            std::memcpy(entity.data.data(), &particle.second.velocity, sizeof(Particles::Point));
+            entities.emplace_back(std::move(entity));
+        }
+    };
+
     // particle sim update timer
-    http_server.addTimer(
-            args["sim-interval"].as<uint32_t>(), [&particles](int) { particles.update(); });
+    http_server.addTimer(args["sim-interval"].as<uint32_t>(), [&](int) {
+        mesh_node.readEntities(merge_particles);
+        particles.update();
+        generate_entities();
+        mesh_node.updateEntities(entities);
+    });
 
     // default page
     http_server.addRequestHandler("/", [](zmq::message_t) {
