@@ -8,7 +8,7 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/program_options.hpp>
 
-#include <unistd.h>
+#include <cmath>
 #include <iostream>
 #include <thread>
 
@@ -54,7 +54,6 @@ int main(int argc, char* argv[]) {
         ("http-port,p", po::value<uint32_t>()->default_value(8000), "http server TCP port")
         ("sim-interval,i", po::value<uint32_t>()->default_value(20), "sim update interval (ms)")
         ("mesh-interval,I", po::value<uint32_t>()->default_value(500), "mesh update interval (ms)")
-        ("expiry-interval,E", po::value<uint32_t>()->default_value(1000), "particle expiry interval (ms)")
         ("help,h", "produce help message");
         // clang-format on
         po::positional_options_description p;
@@ -80,9 +79,9 @@ int main(int argc, char* argv[]) {
     auto http_port = std::to_string(args["http-port"].as<uint32_t>());
     auto mesh_port = std::to_string(args["mesh-port"].as<uint32_t>());
     vsm::MeshNode::Config mesh_config{
-            vsm::msecs(args["mesh-interval"].as<uint32_t>()),    // peer update interval
-            vsm::msecs(args["expiry-interval"].as<uint32_t>()),  // entity expiry interval
-            {},                                                  // ego sphere
+            vsm::msecs(args["mesh-interval"].as<uint32_t>()),  // peer update interval
+            vsm::msecs(0xFFFFFFFF),                            // entity expiry interval
+            {},                                                // ego sphere
             {
                     args["name"].as<std::string>(),                                  // name
                     "udp://" + args["address"].as<std::string>() + ":" + mesh_port,  // address
@@ -111,17 +110,73 @@ int main(int argc, char* argv[]) {
     }
 
     // define particle merging algorithm
-    const auto merge_particles = [&particles](const vsm::EgoSphere::EntityLookup& updates) {
-        auto& lookup = particles.getParticles();
+    mesh_node.getEgoSphere().setEntityUpdateHandler(
+            [&](vsm::EgoSphere::EntityUpdate* new_entity,
+                    const vsm::EgoSphere::EntityUpdate* old_entity, const vsm::NodeInfoT* source) {
+                // if no update (ie deletion), ignore
+                if (!new_entity) {
+                    return false;
+                }
+                // if previous entity doesn't exist, allow update
+                if (!old_entity) {
+                    return true;
+                }
+                // if no source, reject the update
+                if (!source) {
+                    return false;
+                }
+                // if source is self, allow update
+                const auto& self = mesh_node.getPeerTracker().getNodeInfo();
+                if (source->address == self.address) {
+                    return true;
+                }
+                // compute distance from old entity to source and to self
+                float src_d2 =
+                        vsm::distanceSqr(old_entity->entity.coordinates, source->coordinates);
+                float dst_d2 = vsm::distanceSqr(old_entity->entity.coordinates, self.coordinates);
+                // compute weights based on distance
+                float src_weight = 1.0f / (src_d2 + std::numeric_limits<float>::epsilon());
+                float dst_weight = 1.0f / (dst_d2 + std::numeric_limits<float>::epsilon());
+                float norm_factor = 1.0f / (src_weight + dst_weight);
+                src_weight *= norm_factor;
+                dst_weight *= norm_factor;
+                // take distance squared weighted average for position
+                new_entity->entity.coordinates[0] = src_weight * new_entity->entity.coordinates[0] +
+                                                    dst_weight * old_entity->entity.coordinates[0];
+                new_entity->entity.coordinates[1] = src_weight * new_entity->entity.coordinates[1] +
+                                                    dst_weight * old_entity->entity.coordinates[1];
+                // parse velocity
+                Particles::Point new_velocity, old_velocity;
+                std::memcpy(&new_velocity, new_entity->entity.data.data(),
+                        new_entity->entity.data.size());
+                std::memcpy(&old_velocity, old_entity->entity.data.data(),
+                        old_entity->entity.data.size());
+                // take distance squared weighted average for velocity
+                new_velocity.x(src_weight * new_velocity.x() + dst_weight * old_velocity.x());
+                new_velocity.y(src_weight * new_velocity.y() + dst_weight * old_velocity.y());
+                // renormalize velocity
+                float velocity_norm_factor =
+                        sim_config.travel_speed / std::sqrt(new_velocity.x() * new_velocity.x() +
+                                                            new_velocity.y() * new_velocity.y());
+                new_velocity.x(new_velocity.x() * velocity_norm_factor);
+                new_velocity.y(new_velocity.y() * velocity_norm_factor);
+                // write velocity
+                std::memcpy(
+                        new_entity->entity.data.data(), &new_velocity, sizeof(Particles::Point));
+                return true;
+            });
+
+    // define entity to particle conversion
+    const auto read_particles = [&particles](const vsm::EgoSphere::EntityLookup& updates) {
         for (const auto& update : updates) {
             // parse particle
             const auto& coords = update.second.entity.coordinates;
             Particles::Particle particle_update{
                     {coords[0], coords[1]}, {}, static_cast<uint32_t>(std::stoul(update.first))};
-            const auto& buf = update.second.entity.data;
-            std::memcpy(&particle_update.velocity, buf.data(), buf.size());
-            // lookup particle
-            lookup[particle_update.id] = particle_update;
+            const auto& data = update.second.entity.data;
+            std::memcpy(&particle_update.velocity, data.data(), data.size());
+            // save particle
+            particles.getParticles()[particle_update.id] = particle_update;
         }
     };
 
@@ -135,8 +190,6 @@ int main(int argc, char* argv[]) {
             entity.coordinates = {particle.second.position.x(), particle.second.position.y()};
             entity.filter = vsm::Filter::NEAREST;
             entity.range = sim_config.simulation_radius * 2;
-            entity.expiry = mesh_node.getTimeSync().getTime().count() +
-                            mesh_config.entity_expiry_interval.count();
             entity.data.resize(sizeof(Particles::Point));
             std::memcpy(entity.data.data(), &particle.second.velocity, sizeof(Particles::Point));
             entities.emplace_back(std::move(entity));
@@ -145,7 +198,7 @@ int main(int argc, char* argv[]) {
 
     // particle sim update timer
     http_server.addTimer(args["sim-interval"].as<uint32_t>(), [&](int) {
-        mesh_node.readEntities(merge_particles);
+        mesh_node.readEntities(read_particles);
         particles.update();
         generate_entities();
         mesh_node.updateEntities(entities);
