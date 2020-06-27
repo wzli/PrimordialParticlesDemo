@@ -24,6 +24,9 @@ Particles::Particles(Config config)
 }
 
 void Particles::update() {
+    // setup particles
+    respawnParticles();
+    pruneParticles();
     rebuildRTree();
     // simulate each particle
     for (auto& particle : _particles) {
@@ -33,6 +36,27 @@ void Particles::update() {
         // update position
         bg::add_point(particle.second.position, particle.second.velocity);
     }
+}
+
+void Particles::spawnParticle(const Point& position) {
+    uint32_t id = _random_generator();
+    while (_particles.count(id)) {
+        id = _random_generator();
+    }
+    _particles[id] = {position, {_config.travel_speed, 0}};
+}
+
+void Particles::respawnParticles() {
+    while (_particles.size() < 4 * _config.simulation_radius * _config.simulation_radius *
+                                       _config.simulation_density) {
+        Point position(
+                _uniform_distribution(_random_generator), _uniform_distribution(_random_generator));
+        bg::add_point(position, _config.simulation_origin);
+        spawnParticle(position);
+    }
+}
+
+void Particles::pruneParticles() {
     // delete particles outside of simulation radius
     for (auto particle = _particles.begin(); particle != _particles.end();) {
         auto distance_squared =
@@ -42,25 +66,6 @@ void Particles::update() {
         } else {
             ++particle;
         }
-    }
-    respawnParticles();
-}
-
-void Particles::spawnParticle(const Point& position) {
-    uint32_t id = _random_generator();
-    while (_particles.count(id)) {
-        id = _random_generator();
-    }
-    _particles[id] = {position, {_config.travel_speed, 0}, id};
-}
-
-void Particles::respawnParticles() {
-    while (_particles.size() < M_PI * _config.simulation_radius * _config.simulation_radius *
-                                       _config.simulation_density) {
-        Point position(
-                _uniform_distribution(_random_generator), _uniform_distribution(_random_generator));
-        bg::add_point(position, _config.simulation_origin);
-        spawnParticle(position);
     }
 }
 

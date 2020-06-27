@@ -16,7 +16,6 @@ public:
     struct Particle {
         Point position;
         Point velocity;
-        uint32_t id;
         uint32_t left_neighbors = 0;
         uint32_t right_neighbors = 0;
         uint32_t close_neighbors = 0;
@@ -51,6 +50,7 @@ public:
 
 private:
     void respawnParticles();
+    void pruneParticles();
     void rebuildRTree();
     void updateParticleNeighborCount(Particle& particle) const;
     void updateParticleVelocity(Particle& particle) const;
