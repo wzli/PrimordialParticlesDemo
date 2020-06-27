@@ -14,15 +14,16 @@ void Display::drawNetworkSvg(std::stringstream& ss, const vsm::MeshNode& mesh_no
     if (self.coordinates.empty()) {
         return;
     }
-    writeSvgStartTag(ss, self.coordinates[0], self.coordinates[1], 50);
+    float r = self.power_radius * 2;
+    writeSvgStartTag(ss, self.coordinates[0], self.coordinates[1], r);
     for (const auto& peer : mesh_node.getConnectedPeers()) {
         const auto& peers = mesh_node.getPeerTracker().getPeers();
         const auto& peer_node = peers.find(peer);
         if (peer_node != peers.end()) {
-            drawNodeSvg(ss, peer_node->second.node_info, &self.coordinates);
+            drawNodeSvg(ss, peer_node->second.node_info, r * 0.01f, &self.coordinates);
         }
     }
-    drawNodeSvg(ss, self);
+    drawNodeSvg(ss, self, r * 0.01f);
     ss << "</svg>\r\n";
 }
 
@@ -48,8 +49,8 @@ void Display::drawParticlesSvg(std::stringstream& ss, const Particles& particles
     ss << "</svg>\r\n";
 }
 
-void Display::drawNodeSvg(
-        std::stringstream& ss, const vsm::NodeInfoT& node, const std::vector<float>* from) const {
+void Display::drawNodeSvg(std::stringstream& ss, const vsm::NodeInfoT& node, float scale,
+        const std::vector<float>* from) const {
     if (node.coordinates.empty()) {
         return;
     }
@@ -72,7 +73,7 @@ void Display::drawNodeSvg(
     ss << "<g transform=\"translate(";
     ss << node.coordinates[0] << ",";
     ss << node.coordinates[1] << ") ";
-    ss << "scale(.5) \" >\r\n";
+    ss << "scale(" << scale << ") \" >\r\n";
 
     ss << "<ellipse ";
     ss << "rx=\"20\" ry=\"12\" ";
