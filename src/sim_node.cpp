@@ -81,10 +81,11 @@ int main(int argc, char* argv[]) {
     sim_config.simulation_density = args["sim-density"].as<float>();
     auto http_port = std::to_string(args["http-port"].as<uint32_t>());
     auto mesh_port = std::to_string(args["mesh-port"].as<uint32_t>());
+    uint32_t sim_interval = args["sim-interval"].as<uint32_t>();
     vsm::MeshNode::Config mesh_config{
-            args["message-size"].as<uint32_t>(),               // max message size
             vsm::msecs(args["mesh-interval"].as<uint32_t>()),  // peer update interval
-            vsm::msecs(0xFFFFFFFF),                            // entity expiry interval
+            vsm::msecs(sim_interval * 30),                     // entity expiry interval
+            args["message-size"].as<uint32_t>(),               // entity updates size
             {},                                                // ego sphere
             {
                     args["name"].as<std::string>(),                                  // name
@@ -131,9 +132,9 @@ int main(int argc, char* argv[]) {
     mesh_node.getEgoSphere().setEntityUpdateHandler(
             [&](vsm::EgoSphere::EntityUpdate* new_entity,
                     const vsm::EgoSphere::EntityUpdate* old_entity, const vsm::NodeInfoT* source) {
-                // if no update (ie deletion), ignore
+                // if no update (ie deletion), allow
                 if (!new_entity) {
-                    return false;
+                    return true;
                 }
                 // if previous entity doesn't exist, allow update
                 if (!old_entity) {
@@ -204,15 +205,16 @@ int main(int argc, char* argv[]) {
             entity.name = std::to_string(particle.first);
             entity.coordinates = {particle.second.position.x(), particle.second.position.y()};
             entity.filter = vsm::Filter::NEAREST;
-            entity.range = sim_config.simulation_radius * 2;
+            entity.range = sim_config.simulation_radius;
             entity.data.resize(sizeof(Particles::Point));
+            entity.expiry = sim_interval * 5;
             std::memcpy(entity.data.data(), &particle.second.velocity, sizeof(Particles::Point));
             entities.emplace_back(std::move(entity));
         }
     };
 
     // particle sim update timer
-    http_server.addTimer(args["sim-interval"].as<uint32_t>(), [&](int) {
+    http_server.addTimer(sim_interval, [&](int) {
         mesh_node.readEntities(read_particles);
         particles.update();
         generate_entities();
