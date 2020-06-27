@@ -18,7 +18,7 @@ COPY VirtualSpaceMeshnet VirtualSpaceMeshnet
 RUN echo "add_subdirectory(VirtualSpaceMeshnet)" > CMakeLists.txt \
   && mkdir build \
   && cd build \
-  && cmake .. \
+  && cmake -Wno-dev .. \
   && make -j
 
 # build spiral function

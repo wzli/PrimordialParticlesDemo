@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
         ("sim-interval,i", po::value<uint32_t>()->default_value(20), "sim update interval (ms)")
         ("mesh-interval,I", po::value<uint32_t>()->default_value(500), "mesh update interval (ms)")
         ("message-size,m", po::value<uint32_t>()->default_value(7000), "transmission message size")
-        ("distance-averaging,A", po::bool_switch()->default_value(false), "average particles based on distance")
+        ("distance-averaging,A", po::bool_switch()->default_value(true), "average particles based on distance")
         ("verbosity,v", po::value<uint32_t>()->default_value(vsm::Logger::WARN), "verbosity filter 0-6")
         ("help,h", "produce help message");
         // clang-format on
