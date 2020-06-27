@@ -11,7 +11,7 @@ RUN apt install -y \
   cmake \
   libboost-all-dev
 
-WORKDIR /opt/primordial_particle_sim
+WORKDIR /opt/primordial_particles
 
 # build VSM
 COPY VirtualSpaceMeshnet VirtualSpaceMeshnet
@@ -34,11 +34,11 @@ RUN cd build && cmake .. && make -j
 # create output container
 FROM ubuntu:18.04
 # copy built binaries
-COPY --from=0 /opt/primordial_particle_sim/build/sim_node \
-  /opt/primordial_particle_sim/build/spiral \
+COPY --from=0 /opt/primordial_particles/build/sim_node \
+  /opt/primordial_particles/build/spiral \
   /usr/local/bin/
 # copy required libraries
-COPY --from=0 /opt/primordial_particle_sim/build/VirtualSpaceMeshnet/submodules/libzmq/lib/* \
+COPY --from=0 /opt/primordial_particles/build/VirtualSpaceMeshnet/submodules/libzmq/lib/* \
   /usr/lib/x86_64-linux-gnu/libboost_iostreams* \
   /usr/lib/x86_64-linux-gnu/libboost_program_options* \
   /usr/lib/x86_64-linux-gnu/
@@ -49,5 +49,6 @@ EXPOSE 11511/udp
 
 # launch using hostname as address
 CMD address=$(hostname -I); sim_node --http-port 80 --mesh-port 11511  \
-  --name $(hostname) --bootstrap-peer ${address%.*}.2:11511 $address  \
-  $(spiral $((${address##*.} - 2)) 30) --sim-radius 20 --sim-density 0.04 --sim-interval 80 --connection-degree 6
+  --name $(hostname) --bootstrap-peer ${address%.*}.2:11511 --address $address  \
+  $(spiral $((${address##*.} - 2)) 30) --sim-radius $SIM_RADIUS --sim-density $SIM_DENSITY  \
+  --sim-interval $SIM_INTERVAL --connection-degree $CONNECTION_DEGREE
