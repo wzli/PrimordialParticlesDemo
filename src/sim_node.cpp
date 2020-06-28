@@ -56,7 +56,6 @@ int main(int argc, char* argv[]) {
         ("sim-interval,i", po::value<uint32_t>()->default_value(20), "sim update interval (ms)")
         ("mesh-interval,I", po::value<uint32_t>()->default_value(500), "mesh update interval (ms)")
         ("message-size,m", po::value<uint32_t>()->default_value(7000), "transmission message size")
-        ("distance-averaging,A", po::bool_switch()->default_value(true), "average particles based on distance")
         ("verbosity,v", po::value<uint32_t>()->default_value(vsm::Logger::WARN), "verbosity filter 0-6")
         ("help,h", "produce help message");
         // clang-format on
@@ -127,69 +126,6 @@ int main(int argc, char* argv[]) {
         for (const auto& peer : args["bootstrap-peer"].as<std::vector<std::string>>()) {
             mesh_node.getPeerTracker().latchPeer(("udp://" + peer).c_str(), 1);
         }
-    }
-
-    if (args["distance-averaging"].as<bool>()) {
-        // define particle merging algorithm
-        mesh_node.getEgoSphere().setEntityUpdateHandler(
-                [&](vsm::EgoSphere::EntityUpdate* new_entity,
-                        const vsm::EgoSphere::EntityUpdate* old_entity,
-                        const vsm::NodeInfoT* source) {
-                    // if no update (ie deletion), allow
-                    if (!new_entity) {
-                        return true;
-                    }
-                    // if previous entity doesn't exist, allow update
-                    if (!old_entity) {
-                        return true;
-                    }
-                    // if no source, reject the update
-                    if (!source) {
-                        return false;
-                    }
-                    // if source is self, allow update
-                    const auto& self = mesh_node.getPeerTracker().getNodeInfo();
-                    if (source->address == self.address) {
-                        return true;
-                    }
-                    // compute distance from old entity to source and to self
-                    float src_d2 =
-                            vsm::distanceSqr(old_entity->entity.coordinates, source->coordinates);
-                    float dst_d2 =
-                            vsm::distanceSqr(old_entity->entity.coordinates, self.coordinates);
-                    // compute weights based on distance
-                    float src_weight = 1.0f / (src_d2 + std::numeric_limits<float>::epsilon());
-                    float dst_weight = 1.0f / (dst_d2 + std::numeric_limits<float>::epsilon());
-                    float norm_factor = 1.0f / (src_weight + dst_weight);
-                    src_weight *= norm_factor;
-                    dst_weight *= norm_factor;
-                    // take distance squared weighted average for position
-                    new_entity->entity.coordinates[0] =
-                            src_weight * new_entity->entity.coordinates[0] +
-                            dst_weight * old_entity->entity.coordinates[0];
-                    new_entity->entity.coordinates[1] =
-                            src_weight * new_entity->entity.coordinates[1] +
-                            dst_weight * old_entity->entity.coordinates[1];
-                    // parse velocity
-                    Particles::Point new_velocity, old_velocity;
-                    std::memcpy(&new_velocity, new_entity->entity.data.data(),
-                            new_entity->entity.data.size());
-                    std::memcpy(&old_velocity, old_entity->entity.data.data(),
-                            old_entity->entity.data.size());
-                    // take distance squared weighted average for velocity
-                    new_velocity.x(src_weight * new_velocity.x() + dst_weight * old_velocity.x());
-                    new_velocity.y(src_weight * new_velocity.y() + dst_weight * old_velocity.y());
-                    // renormalize velocity
-                    float velocity_norm_factor = sim_config.travel_speed /
-                                                 std::sqrt(new_velocity.x() * new_velocity.x() +
-                                                           new_velocity.y() * new_velocity.y());
-                    new_velocity.x(new_velocity.x() * velocity_norm_factor);
-                    new_velocity.y(new_velocity.y() * velocity_norm_factor);
-                    // write velocity
-                    std::memcpy(new_entity->entity.data.data(), &new_velocity,
-                            sizeof(Particles::Point));
-                    return true;
-                });
     }
 
     // define entity to particle conversion

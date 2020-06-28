@@ -7,7 +7,7 @@ services:
     image: primordial_particles
     environment:
       - SIM_RADIUS=20
-      - SIM_DENSITY=0.032
+      - SIM_DENSITY=0.03
       - SIM_INTERVAL=80
       - CONNECTION_DEGREE=4
     build:
