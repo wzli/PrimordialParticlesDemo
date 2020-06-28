@@ -78,7 +78,8 @@ int main(int argc, char* argv[]) {
     Particles::Config sim_config;
     sim_config.simulation_origin = {args["x-coord"].as<float>(), args["y-coord"].as<float>()};
     sim_config.simulation_radius = args["sim-radius"].as<float>();
-    sim_config.simulation_density = args["sim-density"].as<float>();
+    sim_config.simulation_min_density = args["sim-density"].as<float>();
+    sim_config.simulation_max_density = 2 * sim_config.simulation_min_density;
     auto http_port = std::to_string(args["http-port"].as<uint32_t>());
     auto mesh_port = std::to_string(args["mesh-port"].as<uint32_t>());
     uint32_t sim_interval = args["sim-interval"].as<uint32_t>();
