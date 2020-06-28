@@ -18,8 +18,11 @@ Particles::Particles(Config config)
     if (_config.neighbor_radius <= 0) {
         throw std::invalid_argument("positive neighbor radius required");
     }
-    if (_config.simulation_density <= 0) {
-        throw std::invalid_argument("positive particle density required");
+    if (_config.simulation_min_density <= 0) {
+        throw std::invalid_argument("positive min particle density required");
+    }
+    if (_config.simulation_max_density < _config.simulation_max_density) {
+        throw std::invalid_argument("particle density max >= min required");
     }
 }
 
@@ -47,8 +50,9 @@ void Particles::spawnParticle(const Point& position) {
 }
 
 void Particles::respawnParticles() {
-    while (_particles.size() < 4 * _config.simulation_radius * _config.simulation_radius *
-                                       _config.simulation_density) {
+    float r2 = _config.simulation_radius * _config.simulation_radius;
+    float min_particles = 4 * r2 * _config.simulation_min_density;
+    while (_particles.size() < min_particles) {
         Point position(
                 _uniform_distribution(_random_generator), _uniform_distribution(_random_generator));
         bg::add_point(position, _config.simulation_origin);
@@ -57,15 +61,21 @@ void Particles::respawnParticles() {
 }
 
 void Particles::pruneParticles() {
-    // delete particles outside of simulation radius
+    float r2 = _config.simulation_radius * _config.simulation_radius;
     for (auto particle = _particles.begin(); particle != _particles.end();) {
+        // delete if particle density larger than max
+        if (_particles.size() > 4 * r2 * _config.simulation_max_density) {
+            particle = _particles.erase(particle);
+            continue;
+        }
+        // delete particles outside of simulation radius
         auto distance_squared =
                 bg::comparable_distance(particle->second.position, _config.simulation_origin);
-        if (distance_squared > (_config.simulation_radius * _config.simulation_radius)) {
+        if (distance_squared > r2) {
             particle = _particles.erase(particle);
-        } else {
-            ++particle;
+            continue;
         }
+        ++particle;
     }
 }
 

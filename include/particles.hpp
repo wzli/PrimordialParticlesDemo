@@ -26,7 +26,8 @@ public:
     struct Config {
         Point simulation_origin = {0, 0};
         float simulation_radius = 25;
-        float simulation_density = 0.08;
+        float simulation_min_density = 0.08;
+        float simulation_max_density = 0.15;
         float travel_speed = 0.67f;
         float neighbor_radius = 5.0f;
         float close_radius = 1.3f;
