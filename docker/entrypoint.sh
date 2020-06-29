@@ -1,5 +1,10 @@
 ADDRESS=${ADDRESS:-$(hostname -i)}
+
 EXTERNAL_ADDRESS=${EXTERNAL_ADDRESS:-$(hostname)}
+if [ -n "${GOOGLE_CLOUD_PLATFORM+x}" ]; then
+    EXTERNAL_ADDRESS=$(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
+fi
+
 HTTP_PORT=${HTTP_PORT:-80}
 MESH_PORT=${MESH_PORT:-11511}
 BOOTSTRAP_PEER=${BOOTSTRAP_PEER:-${ADDRESS%.*}.2:$MESH_PORT}

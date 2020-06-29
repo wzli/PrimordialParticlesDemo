@@ -33,6 +33,10 @@ RUN cd build && cmake .. && make -j
 
 # create output container
 FROM ubuntu:18.04
+# install curl
+RUN apt update && apt install -y \
+  curl \
+  && rm -rf /var/lib/apt/lists/*
 # copy built binaries
 COPY --from=0 /opt/primordial_particles/build/sim_node \
   /opt/primordial_particles/build/spiral \
