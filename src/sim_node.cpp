@@ -50,6 +50,7 @@ int main(int argc, char* argv[]) {
         ("x-coord,x", po::value<float>()->default_value(0), "mesh node x coordinate")
         ("y-coord,y", po::value<float>()->default_value(0), "mesh node y coordinate")
         ("connection-degree,c", po::value<uint32_t>()->default_value(6), "nearest peer connections")
+        ("distance-gain,g", po::value<float>()->default_value(0.02f), "distance control gain")
         ("sim-radius,r", po::value<float>()->default_value(25), "simulation region radius")
         ("sim-density,d", po::value<float>()->default_value(0.08f), "simulation particle density")
         ("mesh-port,P", po::value<uint32_t>()->default_value(11511), "mesh node UDP port")
@@ -81,23 +82,26 @@ int main(int argc, char* argv[]) {
     sim_config.simulation_radius = args["sim-radius"].as<float>();
     sim_config.simulation_min_density = args["sim-density"].as<float>();
     sim_config.simulation_max_density = 2 * sim_config.simulation_min_density;
+    float distance_gain = args["distance-gain"].as<float>();
     auto http_port = std::to_string(args["http-port"].as<uint32_t>());
     auto mesh_port = std::to_string(args["mesh-port"].as<uint32_t>());
+    uint32_t mesh_interval = args["mesh-interval"].as<uint32_t>();
     uint32_t sim_interval = args["sim-interval"].as<uint32_t>();
+    size_t connection_degree = args["connection-degree"].as<uint32_t>();
     vsm::MeshNode::Config mesh_config{
-            vsm::msecs(args["mesh-interval"].as<uint32_t>()),  // peer update interval
-            vsm::msecs(sim_interval * 30),                     // entity expiry interval
-            args["message-size"].as<uint32_t>(),               // entity updates size
-            {},                                                // ego sphere
+            vsm::msecs(mesh_interval),            // peer update interval
+            vsm::msecs(sim_interval * 30),        // entity expiry interval
+            args["message-size"].as<uint32_t>(),  // entity updates size
+            {},                                   // ego sphere
             {
                     args["name"].as<std::string>(),                                  // name
                     "udp://" + args["address"].as<std::string>() + ":" + mesh_port,  // address
                     {sim_config.simulation_origin.x(),
                             sim_config.simulation_origin.y()},  // coordinates
                     sim_config.simulation_radius,               // power radius
-                    args["connection-degree"].as<uint32_t>(),   // connection_degree
+                    connection_degree,                          // connection_degree
                     200,                                        // lookup size
-                    0,                                          // rank decay
+                    0.01f,                                      // rank decay
             },
             std::make_shared<vsm::ZmqTransport>("udp://*:" + mesh_port),  // transport
             std::make_shared<vsm::Logger>(),                              // logger
@@ -205,6 +209,25 @@ int main(int argc, char* argv[]) {
         display.drawNetworkSvg(svg_stream, mesh_node);
         auto response = SVG_RESPONSE_HEADER + compress(svg_stream).str();
         return zmq::message_t(response.c_str(), response.size());
+    });
+
+    // sim origin migration timer
+    mesh_node.getTransport().addTimer(vsm::msecs(mesh_interval), [&](int) {
+        auto& self = mesh_node.getPeerTracker().getNodeInfo();
+        const auto& peers = mesh_node.getPeerTracker().getPeerRankings();
+        for (size_t i = 0; i < std::min(connection_degree, peers.size()); ++i) {
+            if (peers[i]->node_info.coordinates.size() != 2) {
+                continue;
+            }
+            float dx = peers[i]->node_info.coordinates[0] - self.coordinates[0];
+            float dy = peers[i]->node_info.coordinates[1] - self.coordinates[1];
+            float d = std::sqrt(dx * dx + dy * dy);
+            float d_error = d - sim_config.simulation_radius;
+            self.coordinates[0] += distance_gain * d_error * dx / d;
+            self.coordinates[1] += distance_gain * d_error * dy / d;
+        }
+        particles.getConfig().simulation_origin.x(self.coordinates[0]);
+        particles.getConfig().simulation_origin.y(self.coordinates[1]);
     });
 
     // worker thread runs mesh network
