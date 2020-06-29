@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
         ("x-coord,x", po::value<float>()->default_value(0), "mesh node x coordinate")
         ("y-coord,y", po::value<float>()->default_value(0), "mesh node y coordinate")
         ("connection-degree,c", po::value<uint32_t>()->default_value(6), "nearest peer connections")
-        ("distance-gain,g", po::value<float>()->default_value(0.02f), "distance control gain")
+        ("distance-gain,g", po::value<float>()->default_value(0.002f), "distance control gain")
         ("sim-radius,r", po::value<float>()->default_value(25), "simulation region radius")
         ("sim-density,d", po::value<float>()->default_value(0.08f), "simulation particle density")
         ("mesh-port,P", po::value<uint32_t>()->default_value(11511), "mesh node UDP port")
@@ -221,10 +221,11 @@ int main(int argc, char* argv[]) {
             }
             float dx = peers[i]->node_info.coordinates[0] - self.coordinates[0];
             float dy = peers[i]->node_info.coordinates[1] - self.coordinates[1];
-            float d = std::sqrt(dx * dx + dy * dy);
-            float d_error = d - sim_config.simulation_radius;
-            self.coordinates[0] += distance_gain * d_error * dx / d;
-            self.coordinates[1] += distance_gain * d_error * dy / d;
+            float d2 = dx * dx + dy * dy;
+            float d2_error = (sim_config.simulation_radius * sim_config.simulation_radius) - d2;
+            float norm_factor = 1.0f / std::sqrt(d2);
+            self.coordinates[0] -= distance_gain * d2_error * dx * norm_factor;
+            self.coordinates[1] -= distance_gain * d2_error * dy * norm_factor;
         }
         particles.getConfig().simulation_origin.x(self.coordinates[0]);
         particles.getConfig().simulation_origin.y(self.coordinates[1]);
