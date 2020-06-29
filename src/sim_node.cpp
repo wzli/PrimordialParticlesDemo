@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
             float dx = peers[i]->node_info.coordinates[0] - self.coordinates[0];
             float dy = peers[i]->node_info.coordinates[1] - self.coordinates[1];
             float d2 = dx * dx + dy * dy;
-            float d2_error = (sim_config.simulation_radius * sim_config.simulation_radius) - d2;
+            float d2_error = 2 * (sim_config.simulation_radius * sim_config.simulation_radius) - d2;
             float norm_factor = 1.0f / std::sqrt(d2);
             self.coordinates[0] -= distance_gain * d2_error * dx * norm_factor;
             self.coordinates[1] -= distance_gain * d2_error * dy * norm_factor;
