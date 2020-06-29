@@ -48,7 +48,5 @@ EXPOSE 80/tcp
 EXPOSE 11511/udp
 
 # launch using hostname as address
-CMD address=$(hostname -I); sim_node --http-port 80 --mesh-port 11511 --address $address \
-  --name $(hostname) --bootstrap-peer ${address%.*}.2:11511 --sim-radius $SIM_RADIUS \
-  $(spiral $((${address##*.} - 2)) $SIM_RADIUS)  --sim-density $SIM_DENSITY \
-  --sim-interval $SIM_INTERVAL --connection-degree $CONNECTION_DEGREE || sleep infinity
+COPY docker/entrypoint.sh .
+CMD ./entrypoint.sh
