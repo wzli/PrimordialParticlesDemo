@@ -45,6 +45,7 @@ int main(int argc, char* argv[]) {
         desc.add_options()
         ("name,n", po::value<std::string>()->default_value("node"), "mesh node name")
         ("address,a", po::value<std::string>()->required(), "mesh node external address")
+        ("name-as-link,l", po::bool_switch()->default_value(false), "use name as http link")
         ("bootstrap-peer,b", po::value<std::vector<std::string>>(), "mesh bootstrap peer (address:port)")
         ("x-coord,x", po::value<float>()->default_value(0), "mesh node x coordinate")
         ("y-coord,y", po::value<float>()->default_value(0), "mesh node y coordinate")
@@ -121,6 +122,8 @@ int main(int argc, char* argv[]) {
     vsm::MeshNode mesh_node(mesh_config);
     ZmqHttpServer http_server(http_port.c_str());
     Display display;
+
+    display.config.name_as_link = args["name-as-link"].as<bool>();
 
     // add bootstrap peers
     if (args.count("bootstrap-peer")) {

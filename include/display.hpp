@@ -9,6 +9,7 @@ struct Display {
         size_t svg_height = 1000;
         std::string svg_bg_color = "black";
         float particle_radius = 0.3f;
+        bool name_as_link = false;
     };
 
     Config config;

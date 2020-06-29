@@ -69,7 +69,8 @@ void Display::drawNodeSvg(std::stringstream& ss, const vsm::NodeInfoT& node, flo
     int addr_len = node.address.rfind(":") - addr_start;
     std::string link = node.address.substr(addr_start, addr_len);
 
-    ss << "<a target=\"_top\" xlink:href=\"http://" << link << "\" >\r\n";
+    ss << "<a target=\"_top\" xlink:href=\"http://" << (config.name_as_link ? node.name : link)
+       << "\" >\r\n";
     ss << "<g transform=\"translate(";
     ss << node.coordinates[0] << ",";
     ss << node.coordinates[1] << ") ";

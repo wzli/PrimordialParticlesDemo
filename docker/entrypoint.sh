@@ -18,4 +18,4 @@ COORDS=${COORDS:-$(spiral $((${ADDRESS##*.} - 2)) $SIM_RADIUS)}
 sim_node --http-port $HTTP_PORT --mesh-port $MESH_PORT --address $ADDRESS \
   --name $EXTERNAL_ADDRESS --bootstrap-peer $BOOTSTRAP_PEER $COORDS \
   --sim-radius $SIM_RADIUS --sim-density $SIM_DENSITY --sim-interval $SIM_INTERVAL \
-  --connection-degree $CONNECTION_DEGREE || sleep infinity
+  --connection-degree $CONNECTION_DEGREE $NAME_AS_LINK || sleep infinity
