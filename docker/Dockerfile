@@ -42,7 +42,7 @@ COPY --from=0 /opt/primordial_particles/build/sim_node \
   /opt/primordial_particles/build/spiral \
   /usr/local/bin/
 # copy required libraries
-COPY --from=0 /opt/primordial_particles/build/VirtualSpaceMeshnet/submodules/libzmq/lib/* \
+COPY --from=0 \
   /usr/lib/x86_64-linux-gnu/libboost_iostreams* \
   /usr/lib/x86_64-linux-gnu/libboost_program_options* \
   /usr/lib/x86_64-linux-gnu/
