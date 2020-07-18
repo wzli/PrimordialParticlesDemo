@@ -1,6 +1,5 @@
 #pragma once
-#include <zmq.hpp>
-#include <zmq_timers.hpp>
+#include <vsm/zmq_timers.hpp>
 
 #include <functional>
 #include <string>
@@ -38,6 +37,6 @@ private:
 
     zmq::context_t _zmq_ctx;
     zmq::socket_t _http_socket;
-    zmq::timers_t _timers;
+    vsm::ZmqTimers _timers;
     std::unordered_map<std::string, RequestHandler> _request_handlers;
 };
