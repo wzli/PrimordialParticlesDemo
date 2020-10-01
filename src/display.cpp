@@ -9,12 +9,13 @@ void Display::writeSvgStartTag(std::stringstream& ss, float x, float y, float r)
     ss << "viewBox=\"" << x - r << " " << y - r << " " << 2 * r << " " << 2 * r << "\" >\r\n";
 }
 
-void Display::drawNetworkSvg(std::stringstream& ss, const vsm::MeshNode& mesh_node) const {
+void Display::drawNetworkSvg(
+        std::stringstream& ss, const vsm::MeshNode& mesh_node, float node_radius) const {
     const auto& self = mesh_node.getPeerTracker().getNodeInfo();
     if (self.coordinates.empty()) {
         return;
     }
-    float r = self.power_radius * 2;
+    float r = node_radius * 2;
     writeSvgStartTag(ss, self.coordinates[0], self.coordinates[1], r);
     for (const auto& peer : mesh_node.getConnectedPeers()) {
         const auto& peers = mesh_node.getPeerTracker().getPeers();

@@ -49,7 +49,6 @@ int main(int argc, char* argv[]) {
         ("bootstrap-peer,b", po::value<std::vector<std::string>>(), "mesh bootstrap peer (address:port)")
         ("x-coord,x", po::value<float>()->default_value(0), "mesh node x coordinate")
         ("y-coord,y", po::value<float>()->default_value(0), "mesh node y coordinate")
-        ("connection-degree,c", po::value<uint32_t>()->default_value(6), "nearest peer connections")
         ("distance-gain,g", po::value<float>()->default_value(0.002f), "distance control gain")
         ("sim-radius,r", po::value<float>()->default_value(25), "simulation region radius")
         ("sim-density,d", po::value<float>()->default_value(0.08f), "simulation particle density")
@@ -87,21 +86,19 @@ int main(int argc, char* argv[]) {
     auto mesh_port = std::to_string(args["mesh-port"].as<uint32_t>());
     uint32_t mesh_interval = args["mesh-interval"].as<uint32_t>();
     uint32_t sim_interval = args["sim-interval"].as<uint32_t>();
-    size_t connection_degree = args["connection-degree"].as<uint32_t>();
     vsm::MeshNode::Config mesh_config{
             vsm::msecs(mesh_interval),            // peer update interval
             vsm::msecs(sim_interval * 30),        // entity expiry interval
             args["message-size"].as<uint32_t>(),  // entity updates size
+            false,                                // spectator
             {},                                   // ego sphere
             {
                     args["name"].as<std::string>(),                                  // name
                     "udp://" + args["address"].as<std::string>() + ":" + mesh_port,  // address
                     {sim_config.simulation_origin.x(),
                             sim_config.simulation_origin.y()},  // coordinates
-                    sim_config.simulation_radius,               // power radius
-                    connection_degree,                          // connection_degree
-                    200,                                        // lookup size
-                    0.01f,                                      // rank decay
+                    0xFFFFFFFF,                                 // group mask
+                    20,                                         // tracking duration
             },
             std::make_shared<vsm::ZmqTransport>("udp://*:" + mesh_port),  // transport
             std::make_shared<vsm::Logger>(),                              // logger
@@ -204,9 +201,9 @@ int main(int argc, char* argv[]) {
     });
 
     // generate network display
-    http_server.addRequestHandler("/network", [&mesh_node, &display](zmq::message_t) {
+    http_server.addRequestHandler("/network", [&mesh_node, &display, &sim_config](zmq::message_t) {
         std::stringstream svg_stream;
-        display.drawNetworkSvg(svg_stream, mesh_node);
+        display.drawNetworkSvg(svg_stream, mesh_node, sim_config.simulation_radius);
         auto response = SVG_RESPONSE_HEADER + compress(svg_stream).str();
         return zmq::message_t(response.c_str(), response.size());
     });
@@ -214,13 +211,16 @@ int main(int argc, char* argv[]) {
     // sim origin migration timer
     mesh_node.getTransport().addTimer(vsm::msecs(mesh_interval), [&](int) {
         auto& self = mesh_node.getPeerTracker().getNodeInfo();
-        const auto& peers = mesh_node.getPeerTracker().getPeerRankings();
-        for (size_t i = 0; i < std::min(connection_degree, peers.size()); ++i) {
-            if (peers[i]->node_info.coordinates.size() != 2) {
+        for (const auto& connected_peer : mesh_node.getConnectedPeers()) {
+            auto peer = mesh_node.getPeerTracker().getPeers().find(connected_peer);
+            if (peer == mesh_node.getPeerTracker().getPeers().end()) {
                 continue;
             }
-            float dx = peers[i]->node_info.coordinates[0] - self.coordinates[0];
-            float dy = peers[i]->node_info.coordinates[1] - self.coordinates[1];
+            if (peer->second.node_info.coordinates.size() != 2) {
+                continue;
+            }
+            float dx = peer->second.node_info.coordinates[0] - self.coordinates[0];
+            float dy = peer->second.node_info.coordinates[1] - self.coordinates[1];
             float d2 = dx * dx + dy * dy;
             float d2_error = 2 * (sim_config.simulation_radius * sim_config.simulation_radius) - d2;
             float norm_factor = 1.0f / std::sqrt(d2);

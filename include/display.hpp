@@ -14,7 +14,8 @@ struct Display {
 
     Config config;
 
-    void drawNetworkSvg(std::stringstream& ss, const vsm::MeshNode& mesh_node) const;
+    void drawNetworkSvg(
+            std::stringstream& ss, const vsm::MeshNode& mesh_node, float node_radius) const;
     void drawParticlesSvg(std::stringstream& ss, const Particles& particles) const;
     void drawNodeSvg(std::stringstream& ss, const vsm::NodeInfoT& node, float scale = 0.5f,
             const std::vector<float>* from = nullptr) const;
