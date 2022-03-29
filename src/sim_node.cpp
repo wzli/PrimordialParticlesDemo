@@ -134,8 +134,9 @@ int main(int argc, char* argv[]) {
     }
 
     // define entity to particle conversion
-    const auto read_particles = [&particles](const vsm::EgoSphere::EntityLookup& updates) {
-        for (const auto& update : updates) {
+    const auto parse_particles = [&particles, &mesh_node]() {
+        auto entities = mesh_node.getEntities();
+        for (const auto& update : entities.first) {
             const auto& coords = update.second.entity.coordinates;
             uint32_t id = static_cast<uint32_t>(std::stoul(update.first));
             auto& particle = particles.getParticles()[id] = {{coords[0], coords[1]}, {}, id};
@@ -163,9 +164,10 @@ int main(int argc, char* argv[]) {
 
     // particle sim update timer
     http_server.addTimer(sim_interval, [&](int) {
-        mesh_node.readEntities(read_particles);
+        parse_particles();
         particles.update();
         generate_entities();
+        mesh_node.offsetRelativeExpiry(entities);
         mesh_node.updateEntities(entities);
     });
 
