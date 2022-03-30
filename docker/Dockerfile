@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -34,7 +34,7 @@ COPY src src
 RUN cd build && cmake .. && make -j
 
 # create output container
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 # install curl
 RUN apt update && apt install -y \
   curl \

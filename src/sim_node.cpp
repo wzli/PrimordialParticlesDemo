@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
         ("sim-interval,i", po::value<uint32_t>()->default_value(20), "sim update interval (ms)")
         ("mesh-interval,I", po::value<uint32_t>()->default_value(500), "mesh update interval (ms)")
         ("message-size,m", po::value<uint32_t>()->default_value(7000), "transmission message size")
-        ("verbosity,v", po::value<uint32_t>()->default_value(vsm::Logger::WARN), "verbosity filter 0-6")
+        ("verbosity,v", po::value<uint32_t>()->default_value(vsm::Logger::INFO), "verbosity filter 0-6")
         ("help,h", "produce help message");
         // clang-format on
         po::positional_options_description p;
@@ -106,15 +106,44 @@ int main(int argc, char* argv[]) {
     // log to console
     mesh_config.logger->addLogHandler(
             static_cast<vsm::Logger::Level>(args["verbosity"].as<uint32_t>()),
-            [&](int64_t time, vsm::Logger::Level level, vsm::Error error, const void*, size_t len) {
+            [&](int64_t time, vsm::Logger::Level level, vsm::Error error, const void* data,
+                    size_t len) {
                 if (error.type == vsm::EgoSphere::ENTITY_UPDATED) {
                     return;
                 }
-                std::cout << time << " lv: " << level << ", type: " << error.type
-                          << ", code: " << error.code << ", msg: " << error.what() << std::endl;
-                if (error.type == vsm::MeshNode::MESSAGE_VERIFY_FAIL) {
-                    std::cout << "\tdropped buffer size " << len << std::endl;
+                std::cout << "t: " << time << "  lv: " << level << "  type: " << error.type
+                          << "  code: " << error.code << "  msg: " << error.msg;
+                switch (error.type) {
+                    case vsm::PeerTracker::INITIALIZED:
+                        if (data) {
+                            vsm::NodeInfoT* node_info = (vsm::NodeInfoT*) data;
+                            std::cout << "  " << node_info->address;
+                            std::cout << "  " << node_info->name;
+                        }
+                        break;
+                    case vsm::PeerTracker::PEER_LATCHED:
+                        if (data) {
+                            std::cout << "  " << (const char*) data;
+                        }
+                        break;
+                    case vsm::PeerTracker::NEW_PEER_DISCOVERED:
+                        if (data) {
+                            vsm::NodeInfo* node_info = (vsm::NodeInfo*) data;
+                            if (node_info->address()) {
+                                std::cout << "  " << node_info->address()->c_str();
+                            }
+                            if (node_info->name()) {
+                                std::cout << "  " << node_info->name()->c_str();
+                            }
+                        }
+                        break;
+                    case vsm::MeshNode::MESSAGE_VERIFY_FAIL:
+                        std::cout << "  dropped buffer size " << len;
+                        break;
+                    default:
+                        break;
                 }
+                std::cout << std::endl;
             });
 
     // create objects from config
