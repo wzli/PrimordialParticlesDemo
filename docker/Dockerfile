@@ -1,4 +1,6 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 # fetch dependencies
 RUN apt update
@@ -32,7 +34,7 @@ COPY src src
 RUN cd build && cmake .. && make -j
 
 # create output container
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 # install curl
 RUN apt update && apt install -y \
   curl \
