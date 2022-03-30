@@ -87,8 +87,8 @@ int main(int argc, char* argv[]) {
     uint32_t mesh_interval = args["mesh-interval"].as<uint32_t>();
     uint32_t sim_interval = args["sim-interval"].as<uint32_t>();
     vsm::MeshNode::Config mesh_config{
-            vsm::msecs(mesh_interval),            // peer update interval
-            vsm::msecs(sim_interval * 30),        // entity expiry interval
+            mesh_interval,                        // peer update interval
+            sim_interval * 30,                    // entity expiry interval
             args["message-size"].as<uint32_t>(),  // entity updates size
             false,                                // spectator
             {},                                   // ego sphere
@@ -106,12 +106,11 @@ int main(int argc, char* argv[]) {
     // log to console
     mesh_config.logger->addLogHandler(
             static_cast<vsm::Logger::Level>(args["verbosity"].as<uint32_t>()),
-            [&](vsm::msecs time, vsm::Logger::Level level, vsm::Error error, const void*,
-                    size_t len) {
+            [&](int64_t time, vsm::Logger::Level level, vsm::Error error, const void*, size_t len) {
                 if (error.type == vsm::EgoSphere::ENTITY_UPDATED) {
                     return;
                 }
-                std::cout << time.count() << " lv: " << level << ", type: " << error.type
+                std::cout << time << " lv: " << level << ", type: " << error.type
                           << ", code: " << error.code << ", msg: " << error.what() << std::endl;
                 if (error.type == vsm::MeshNode::MESSAGE_VERIFY_FAIL) {
                     std::cout << "\tdropped buffer size " << len << std::endl;
@@ -156,7 +155,7 @@ int main(int argc, char* argv[]) {
             entity.filter = vsm::Filter::NEAREST;
             entity.range = sim_config.simulation_radius;
             entity.data.resize(sizeof(Particles::Point));
-            entity.expiry = sim_interval * 5;
+            entity.expiry = sim_interval * 5 * 1000 * 1000;
             std::memcpy(entity.data.data(), &particle.second.velocity, sizeof(Particles::Point));
             entities.emplace_back(std::move(entity));
         }
@@ -211,7 +210,7 @@ int main(int argc, char* argv[]) {
     });
 
     // sim origin migration timer
-    mesh_node.getTransport().addTimer(vsm::msecs(mesh_interval), [&](int) {
+    mesh_node.getTransport().addTimer(mesh_interval, [&](int) {
         auto& self = mesh_node.getPeerTracker().getNodeInfo();
         for (const auto& connected_peer : mesh_node.getConnectedPeers()) {
             auto peer = mesh_node.getPeerTracker().getPeers().find(connected_peer);
@@ -236,7 +235,7 @@ int main(int argc, char* argv[]) {
     // worker thread runs mesh network
     std::thread mesh_thread([&mesh_node]() {
         while (1) {
-            mesh_node.getTransport().poll(vsm::msecs(-1));
+            mesh_node.getTransport().poll(-1);
         }
     });
     mesh_thread.detach();
